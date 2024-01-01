@@ -1,3 +1,16 @@
+*.DS_Store
+*.mat
+*.h5
+.*
+wandb
+Ada-LISTA(history)
+Model
+Models
+.*.*
+
+._*
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
