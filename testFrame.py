@@ -5,7 +5,7 @@ from configs import config_test as config
 from configs import name
 import matplotlib.pyplot as plt
 
-epoch_read = 20
+epoch_read = config['epoch']
 
 dataset = DoaMethods.MakeDataset(config['data_path'])
 print(len(dataset))
