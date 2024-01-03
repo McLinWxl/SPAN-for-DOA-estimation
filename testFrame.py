@@ -14,7 +14,7 @@ loader = torch.utils.data.DataLoader(dataset, batch_size=config['batch_size'], s
 
 dictionary = torch.from_numpy(dataset.get_dictionary())
 
-model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/model_{epoch_read}.pth")
+model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/best.pth")
 
 model.eval()
 mse_val_last = 0
@@ -29,8 +29,11 @@ with torch.no_grad():
         output, layers_output_val = model(covariance_array)
 
 idx = 1
-plt.plot(output[idx].detach().numpy())
-for k in range(label.shape[1]):
-    if label[idx, k] != 0:
-        plt.axvline(x=k, color='r')
-plt.show()
+for i in range(config['num_layers']):
+    plt.plot(layers_output_val[idx, i].detach().numpy())
+    for k in range(label.shape[1]):
+        if label[idx, k] != 0:
+            plt.axvline(x=k, color='r')
+    plt.savefig(f"{config['figure_path']}/layer_{i}.pdf")
+    plt.show()
+    plt.close()

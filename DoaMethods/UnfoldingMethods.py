@@ -140,7 +140,7 @@ class CPSS_LISTA(torch.nn.Module):
         self.num_meshes = dictionary.shape[1]
         self.is_SS = kwargs.get('SS', True)
         self.is_CP = kwargs.get('CP', True)
-        self.num_layers = kwargs.get('num_layer', 10)
+        self.num_layers = kwargs.get('num_layers', 10)
         self.p_selection = kwargs.get('p_selection', 1.2)
         self.p_max = kwargs.get('p_max', 9)
         self.device = kwargs.get('device', torch.device('cpu'))
