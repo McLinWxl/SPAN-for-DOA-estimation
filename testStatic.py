@@ -4,7 +4,7 @@ from configs import name
 import matplotlib.pyplot as plt
 
 TestCurve = DoaMethods.TestCurve(dir_test=config['data_path'])
-AMI_predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
+AMI_predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_150.pth",
                                       num_layers=config['num_layers'], device=config['device'])
 AMI_peak = TestCurve.find_peak(AMI_predict.detach().numpy())
 _, AMI_RMSE, AMI_NMSE, AMI_prob = TestCurve.calculate_error(AMI_peak)

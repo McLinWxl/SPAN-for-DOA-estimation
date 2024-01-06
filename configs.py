@@ -1,11 +1,11 @@
 import os
-name = 'LISTA'  # LISTA, CPSS, AMI
-name_train = 'LISTA-LF8'
-name_test = 'LISTA-LF8'
-name_test_SNR = 'LISTA-LF8'
+name = 'AMI'  # LISTA, CPSS, AMI
+name_train = 'AMI-LF10'
+name_test = 'AMI-LF10'
+name_test_SNR = 'AMI-LF10'
 
-num_layers = 8
-num_layers_test = 8
+num_layers = 10
+num_layers_test = 10
 
 config = {
     'device': 'cpu',
@@ -13,11 +13,13 @@ config = {
     'model_path': f'./Model/{name_train}/',
     'figure_path': f'./Figure/{name_train}/',
     'result_path': f'./Result/{name_train}/',
-    'batch_size': 100,
+    'batch_size': 128,
     'learning_rate': 0.001,
     'num_layers': num_layers,
     'LF': True,
-    'epoch': 100,
+    'epoch': 605,
+    'scheduler': True,
+    'warmup_epoch': 601,
 }
 
 config_test = {

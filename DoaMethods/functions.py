@@ -76,11 +76,23 @@ def support_selection(x, theta, p):
 
 
 def min_max_norm(x):
-    x += 1e-8
-    if not np.max(x) - np.min(x):
-        return np.zeros(x.shape)
-    else:
-        return (x - np.min(x)) / (np.max(x) - np.min(x))
+    """
+    :param x: [batch, data, 1]
+    :return:
+    """
+
+    if isinstance(x, np.ndarray):
+        batch, data, _ = x.shape
+        x += 1e-20
+        for i in range(batch):
+            x[i] = (x[i] - np.min(x[i])) / (np.max(x[i]) - np.min(x[i]))
+    elif isinstance(x, torch.Tensor):
+        batch, data, _ = x.shape
+        # x = 1e-20 + x
+        for i in range(batch):
+            x[i] = (x[i] - torch.min(x[i])) / (torch.max(x[i]) - torch.min(x[i]))
+    return x
+
 
 
 def find_peak(spectrum, num_sources=2, height_ignore=0, start_bias=60):

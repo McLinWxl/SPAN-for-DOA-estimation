@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 import DoaMethods
 import torch.utils.data
 from configs import config, name
@@ -16,30 +18,43 @@ model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_lay
 loss = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
 
+# TODO: Better scheduler?
+scheduler_cosine_warmup = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6, last_epoch=-1)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08)
+
 loss_best = 100
 for epoch in range(config['epoch']+1):
     if epoch < 15 or epoch % 10 == 0:
         torch.save({'model': model.state_dict()}, f"{config['model_path']}/model_{epoch}.pth")
     model.train()
     mse_train_last = 0
+    iii = 0
     for covariance_vector, label in train_loader:
         mse_loss = 0
         label = label.to(config['device'])
+        # if epoch <= config['warmup_epoch']:
+        #     label /= torch.sqrt(torch.tensor(3))
         covariance_vector = covariance_vector.to(config['device'])
-        label = label.to(config['device'])
-        label /= torch.norm(label, dim=1, keepdim=True)
-        label /= torch.sqrt(torch.tensor(2))
         output, layers_output = model(covariance_vector)
         if config['LF']:
             for i in range(config['num_layers']):
                 mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32))) * (
-                        torch.log(torch.tensor(i + 1)) + 1)
+                        torch.log(torch.tensor(i + 2)))
         else:
             mse_loss = loss(output.to(torch.float32), label.to(torch.float32))
+        # if epoch == 0:
+        # for nl in range(config['num_layers']):
+        #     plt.plot(label[0].detach().numpy())
+        #     plt.plot(layers_output[0, nl].detach().numpy())
+        #     plt.show()
+        # nl = 0
         mse_loss.backward()
         optimizer.step()
         optimizer.zero_grad()
         mse_train_last += mse_loss.item()
+        # if iii == 0:
+        #     print(f"Epoch: {epoch}, Iteration: {iii}, Loss: {mse_loss.item()}")
+        iii += 1
     mse_train_last /= len(train_loader)
 
     model.eval()
@@ -47,22 +62,33 @@ for epoch in range(config['epoch']+1):
     with torch.no_grad():
         for covariance_array, label in val_loader:
             label = label.to(config['device'])
+            # if epoch <= config['warmup_epoch']:
+            #     label /= torch.sqrt(torch.tensor(3))
             covariance_array = covariance_array.to(config['device'])
-            label = label.to(config['device'])
-            label /= torch.norm(label, dim=1, keepdim=True)
-            label /= torch.sqrt(torch.tensor(2))
             loss_value = 0
             output, layers_output_val = model(covariance_array)
             if config['LF']:
                 for i in range(config['num_layers']):
                     loss_value = loss_value + (
                         loss(layers_output_val[:, i].to(torch.float32), label.to(torch.float32))) * (
-                                         torch.log(torch.tensor(i + 1)) + 1)
+                                         torch.log(torch.tensor(i + 2)))
             else:
                 loss_value = loss(output.to(torch.float32), label.to(torch.float32))
             mse_val_last += loss_value.item()
     mse_val_last /= len(val_loader)
     print(f"Epoch: {epoch}, Train Loss: {mse_train_last}, Valid Loss: {mse_val_last}")
+
+    if config['scheduler']:
+        lr = []
+        if epoch <= config['warmup_epoch']:
+            scheduler_cosine_warmup.step(epoch)
+        else:
+            scheduler.step(mse_val_last)
+        print(f"Learning rate: {optimizer.param_groups[0]['lr']}")
+        lr.append(optimizer.param_groups[0]['lr'])
+
+    with open(f"{config['result_path']}/lr.csv", 'a+') as f:
+        f.write(f"{epoch},{optimizer.param_groups[0]['lr']}\n")
 
     if mse_val_last < loss_best:
         loss_best = mse_val_last
@@ -70,9 +96,9 @@ for epoch in range(config['epoch']+1):
         print("Best model saved")
 
     # Save loss to .csv
-
     with open(f"{config['result_path']}/loss.csv", 'a+') as f:
         f.write(f"{epoch},{mse_train_last},{mse_val_last}\n")
+
 
 
 

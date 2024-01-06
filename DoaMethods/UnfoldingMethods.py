@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from DoaMethods.functions import support_selection, soft_threshold
@@ -46,7 +47,7 @@ class LISTA(torch.nn.Module):
             # apply soft-thresholding on xabs, return xabs
             x_eta = self.relu(x_abs - self.theta[t])
             x_norm = x_eta.norm(dim=1, keepdim=True)
-            x_eta = x_eta / (x_norm + 1e-20)
+            x_eta = x_eta / (torch.sqrt(torch.tensor(2.))*(x_norm + 1e-20))
             x_layers_virtual[:, t] = x_eta
         return x_eta, x_layers_virtual
 
@@ -84,7 +85,7 @@ class AMI_LISTA(torch.nn.Module):
             self.W = torch.nn.Parameter(torch.eye(M2) + 1j * torch.zeros([M2, M2]), requires_grad=True)
         self.theta = torch.nn.Parameter(0.001 * torch.ones(self.num_layers), requires_grad=True)
         self.gamma = torch.nn.Parameter(0.001 * torch.ones(self.num_layers), requires_grad=True)
-        self.relu = torch.nn.ReLU()
+        self.relu = torch.nn.LeakyReLU()
         self.dictionary = dictionary
 
     def forward(self, covariance_vector: torch.Tensor):
@@ -118,9 +119,19 @@ class AMI_LISTA(torch.nn.Module):
             s = torch.matmul(Wt, x_real+1j*torch.zeros_like(x_real)) + torch.matmul(We, covariance_vector)
             s_abs = torch.abs(s)
             x_real = self.relu(s_abs - self.theta[layer])
-            x_norm = x_real.norm(dim=1, keepdim=True)
-            x_real = x_real / (x_norm + 1e-20)
+            # x_norm = x_real.norm(dim=1, keepdim=True)
+            # # To avoid all-zero output
+            # for nb in range(batch_size):
+            #     if x_norm[nb] == 0:
+            #         x_real[nb] = 0.5
+            x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
+            # plt.plot(x_real[0].detach().numpy())
+            # plt.show()
+
+            # plt.plot(x_real[0].detach().numpy())
+            # plt.show()
             x_layers_virtual[:, layer] = x_real
+
         return x_real, x_layers_virtual
 
 
@@ -171,6 +182,6 @@ class CPSS_LISTA(torch.nn.Module):
             else:
                 eta = soft_threshold(r, self.theta[i])
             eta = torch.abs(eta)
-            eta = torch.abs(eta) / (torch.norm(torch.abs(eta), dim=1, keepdim=True) + 1e-20)
+            eta = torch.abs(eta) / (torch.sqrt(torch.tensor(2.))*(torch.norm(torch.abs(eta), dim=1, keepdim=True) + 1e-20))
             eta_layers[:, i, :, :] = eta
         return eta, eta_layers

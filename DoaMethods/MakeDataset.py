@@ -1,7 +1,7 @@
 import h5py
 import torch.utils.data
 import matplotlib.pyplot as plt
-from DoaMethods.functions import denoise_covariance
+from DoaMethods.functions import denoise_covariance, min_max_norm
 import numpy
 
 
@@ -32,6 +32,7 @@ class MakeDataset(torch.utils.data.Dataset):
 
         self.label = label.reshape(len_dataset, num_mesh, 1)
         self.label /= numpy.linalg.norm(self.label, axis=1, keepdims=True)
+        # self.label /= numpy.sqrt(2)
         self.covariance_matrix = denoise_covariance(covariance_matrix)
         self.covariance_vector = self.covariance_matrix.transpose(0, 2, 1).reshape(len_dataset, num_sensors ** 2, 1)
 
