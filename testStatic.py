@@ -4,7 +4,7 @@ from configs import name
 import matplotlib.pyplot as plt
 
 TestCurve = DoaMethods.TestCurve(dir_test=config['data_path'])
-AMI_predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_150.pth",
+AMI_predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_300.pth",
                                       num_layers=config['num_layers'], device=config['device'])
 AMI_peak = TestCurve.find_peak(AMI_predict.detach().numpy())
 _, AMI_RMSE, AMI_NMSE, AMI_prob = TestCurve.calculate_error(AMI_peak)
@@ -28,13 +28,14 @@ plt.plot(snr_list, AMI_NMSE, label='AMI')
 plt.xlabel('SNR/dB')
 plt.ylabel('NMSE/dB')
 plt.title("NMSE vs SNR")
+plt.ylim(-35, -5)
 plt.legend(loc='upper right', prop={'size': 5})
 plt.grid(which='both', axis='both', linestyle='--', linewidth=0.1)
 plt.savefig(f"{config['figure_path']}/varSNR_NMSE.pdf")
 plt.show()
 plt.close()
 
-with open(f"{config['result_path']}/varSNR.csv", 'w') as f:
+with open(f"{config['result_path']}/varSNR{config['testSNR_interval']}.csv", 'w') as f:
     f.write("SNR, RMSE, NMSE, prob\n")
     for i in range(len(snr_list)):
         f.write(f"{snr_list[i]}, {AMI_RMSE[i]}, {AMI_NMSE[i]}, {AMI_prob[i]}\n")

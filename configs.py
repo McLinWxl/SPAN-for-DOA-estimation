@@ -1,11 +1,18 @@
 import os
 name = 'AMI'  # LISTA, CPSS, AMI
-name_train = 'AMI-LF10'
-name_test = 'AMI-LF10'
-name_test_SNR = 'AMI-LF10'
+is_LF = True
+num_layers = 20
+num_layers_test = 20
+if is_LF:
+    name_train = f'{name}-LF{num_layers}'
+    name_test = f'{name}-LF{num_layers}'
+    name_test_SNR = f'{name}-LF{num_layers}'
+else:
+    name_train = f'{name}-{num_layers}'
+    name_test = f'{name}-{num_layers}'
+    name_test_SNR = f'{name}-{num_layers}'
 
-num_layers = 10
-num_layers_test = 10
+testSNR_interval = 6
 
 config = {
     'device': 'cpu',
@@ -16,8 +23,8 @@ config = {
     'batch_size': 128,
     'learning_rate': 0.001,
     'num_layers': num_layers,
-    'LF': True,
-    'epoch': 605,
+    'LF': is_LF,
+    'epoch': 801,
     'scheduler': True,
     'warmup_epoch': 601,
 }
@@ -34,8 +41,9 @@ config_test = {
 }
 
 config_test_SNR = {
+    'testSNR_interval': testSNR_interval,
     'device': 'cpu',
-    'data_path': './Dataset/Data/TestData_varSNR_16.h5',
+    'data_path': f'./Dataset/Data/TestData_varSNR_{testSNR_interval}.h5',
     'model_path': f'./Model/{name_test_SNR}/',
     'figure_path': f'./Figure/{name_test_SNR}/',
     'result_path': f'./Result/{name_test_SNR}/',

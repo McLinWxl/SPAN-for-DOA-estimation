@@ -85,8 +85,9 @@ class AMI_LISTA(torch.nn.Module):
             self.W = torch.nn.Parameter(torch.eye(M2) + 1j * torch.zeros([M2, M2]), requires_grad=True)
         self.theta = torch.nn.Parameter(0.001 * torch.ones(self.num_layers), requires_grad=True)
         self.gamma = torch.nn.Parameter(0.001 * torch.ones(self.num_layers), requires_grad=True)
-        self.relu = torch.nn.LeakyReLU()
+        self.leakly_relu = torch.nn.LeakyReLU()
         self.dictionary = dictionary
+        self.relu = torch.nn.ReLU()
 
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
@@ -118,20 +119,12 @@ class AMI_LISTA(torch.nn.Module):
             We = self.gamma[layer] * W1D.conj().T
             s = torch.matmul(Wt, x_real+1j*torch.zeros_like(x_real)) + torch.matmul(We, covariance_vector)
             s_abs = torch.abs(s)
-            x_real = self.relu(s_abs - self.theta[layer])
-            # x_norm = x_real.norm(dim=1, keepdim=True)
-            # # To avoid all-zero output
-            # for nb in range(batch_size):
-            #     if x_norm[nb] == 0:
-            #         x_real[nb] = 0.5
+            if layer < self.num_layers - 1:
+                x_real = self.leakly_relu(s_abs - self.theta[layer])
+            else:
+                x_real = self.relu(s_abs - self.theta[layer])
             x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
-            # plt.plot(x_real[0].detach().numpy())
-            # plt.show()
-
-            # plt.plot(x_real[0].detach().numpy())
-            # plt.show()
             x_layers_virtual[:, layer] = x_real
-
         return x_real, x_layers_virtual
 
 

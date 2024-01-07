@@ -14,7 +14,7 @@ loader = torch.utils.data.DataLoader(dataset, batch_size=config['batch_size'], s
 
 dictionary = torch.from_numpy(dataset.get_dictionary())
 
-model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/model_150.pth")
+model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/model_600.pth")
 
 model.eval()
 mse_val_last = 0
