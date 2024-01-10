@@ -1,16 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from DoaMethods.configs import config_test_SNR as config
+from DoaMethods.configs import config_test_static as config
 
+
+mode = config['mode']
 lr_dir = f"{config['result_path']}/lr.csv"
 loss_dir = f"{config['result_path']}/loss.csv"
-varSNR_dir = f"{config['result_path']}/varSNR{config['testSNR_interval']}.csv"
+varSNR_dir = f"{config['result_path']}/var{mode}{config['testSNR_interval']}.csv"
 
 # lr_dir = '/Volumes/WangXinLin/GitLibrary/UnfoldingDOA/Result/AMI-LF10_old/lr.csv'
 # loss_dir = '/Volumes/WangXinLin/GitLibrary/UnfoldingDOA/Result/AMI-LF10_old/loss.csv'
 
-is_lr = True
-is_SNR = False
+is_lr = False
+is_SNR = True
 start = 0
 if is_lr:
     epoch = np.loadtxt(lr_dir, delimiter=',', skiprows=1)[start:, 0]
@@ -43,8 +45,8 @@ if is_lr:
 if is_SNR:
     plt.close()
     plt.plot(varSNR, RMSE)
-    plt.xlabel('SNR/dB')
-    plt.ylabel('RMSE/$^{\circ}$')
+    plt.xlabel('SNR(dB)')
+    plt.ylabel('RMSE(/$^{\circ}$)')
     plt.ylim(1e-1, 30)
     plt.yscale('log')
     plt.title("RMSE vs SNR")

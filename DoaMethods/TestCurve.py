@@ -23,19 +23,34 @@ class TestCurve:
         self.DOA_train = test_mat["DOA_train"][()]
         # self.DOA_train = test_mat["DOA_train"][()].T.reshape(1, *test_mat["DOA_train"].shape[:3])
         self.num_sources = num_sources
-
-        if len(test_mat["PseudoSpectrum"].shape) == 3:
-            self.PseudoSpectrum = (test_mat["PseudoSpectrum"] - np.min(test_mat["PseudoSpectrum"])) / \
-                                  (np.max(test_mat["PseudoSpectrum"]) - np.min(test_mat["PseudoSpectrum"]))
-            self.covariance_matrix = self.covariance_matrix.reshape(1, *self.covariance_matrix.shape)
-        elif len(test_mat["PseudoSpectrum"].shape) == 4:
-            self.PseudoSpectrum = (test_mat["PseudoSpectrum"] - np.min(test_mat["PseudoSpectrum"])) / \
-                                  (np.max(test_mat["PseudoSpectrum"]) - np.min(test_mat["PseudoSpectrum"]))
+        pseudo_spectrum = test_mat["PseudoSpectrum"][()]
+        if len(pseudo_spectrum.shape) == 3:
+            pseudo_spectrum = pseudo_spectrum.transpose(0, 2, 1)
+            S_est_norm = np.zeros_like(pseudo_spectrum)
+            for i in range(pseudo_spectrum.shape[0]):
+                S_est_norm[i, 0, :] = (pseudo_spectrum[i, 0, :] - np.min(pseudo_spectrum[i, 0, :])) / (
+                        np.max(pseudo_spectrum[i, 0, :]) - np.min(pseudo_spectrum[i, 0, :]))
+            S_est = S_est_norm
+            self.covarianceMatrix_clean = self.covariance_matrix_clean.reshape(1, -1, 8, 8)
+            self.covariance_matrix = self.covariance_matrix.reshape(1, -1, 8, 8)
+            self.num_mesh = self.label.shape[1]
+            # DEBUG: Data generator with wrong shape
+            self.DOA_train = self.DOA_train.reshape(1, 2, -1).transpose(0, 2, 1)
+        elif len(pseudo_spectrum.shape) == 4:
+            pseudo_spectrum = pseudo_spectrum.transpose(0, 1, 3, 2)
+            S_est_norm = np.zeros_like(pseudo_spectrum)
+            for i in range(pseudo_spectrum.shape[0]):
+                for j in range(pseudo_spectrum.shape[1]):
+                    S_est_norm[i, j, 0, :] = (pseudo_spectrum[i, j, 0, :] - np.min(pseudo_spectrum[i, j, 0, :])) / (
+                            np.max(pseudo_spectrum[i, j, 0, :]) - np.min(pseudo_spectrum[i, j, 0, :]))
+            S_est = S_est_norm
+            self.num_mesh = self.label.shape[2]
         else:
             raise ValueError("Wrong dimension of PseudoSpectrum")
+        self.pseudo_spectrum = S_est
 
         self.num_lists, self.num_id, self.num_sensors, _ = self.covariance_matrix.shape
-        self.num_mesh = self.label.shape[2]
+
         self.label = self.label.reshape(self.num_lists, self.num_id, self.num_mesh, 1)
         self.num_sensors, self.num_snapshots = self.raw_data.shape[-2::]
         self.covariance_array = self.covariance_matrix.transpose(0, 1, 3, 2).reshape(self.num_lists, self.num_id,
@@ -63,7 +78,7 @@ class TestCurve:
             elif name == 'DCNN':
                 for list_idx in track(range(self.num_lists), description="DCNN"):
                     for idx in range(self.num_id):
-                        cor_array_item = torch.unsqueeze(torch.from_numpy(self.PseudoSpectrum[list_idx, idx]), dim=0)
+                        cor_array_item = torch.unsqueeze(torch.from_numpy(self.pseudo_spectrum[list_idx, idx]), dim=0)
                         prediction[list_idx, idx] = model(cor_array_item)
 
         return prediction, prediction_layers
@@ -124,6 +139,7 @@ class TestCurve:
                     if error[idx, i] > 4.4:
                         error[idx, i] = 10
             RMSE[snr] = np.sqrt(np.mean(error ** 2))
+            # NMSE in LaTeX: \frac{1}{N}\sum_{i=1}^{N}\frac{\left(\hat{\theta}_{i}-\theta_{i}\right)^{2}}{\theta_{i}^{2}}
             NMSE[snr] = 10 * np.log10(np.mean(error ** 2) / np.mean(DOA_train_st[snr] ** 2))
             prob[snr] = prob[snr] / num_id
 

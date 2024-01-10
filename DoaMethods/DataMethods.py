@@ -16,7 +16,7 @@ class DCNN(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = x.transpose(1, 2)
+        # x = x.transpose(1, 2)
         x = x.to(torch.float32)
         conv1 = self.relu(self.conv1(x))
         conv1 = self.bn1(conv1)
