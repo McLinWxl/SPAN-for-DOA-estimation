@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 class DCNN(nn.Module):
@@ -15,6 +16,8 @@ class DCNN(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
+        x = x.transpose(1, 2)
+        x = x.to(torch.float32)
         conv1 = self.relu(self.conv1(x))
         conv1 = self.bn1(conv1)
         conv2 = self.relu(self.conv2(conv1))
@@ -22,5 +25,5 @@ class DCNN(nn.Module):
         conv3 = self.relu(self.conv3(conv2))
         conv3 = self.bn3(conv3)
         conv4 = self.relu(self.conv4(conv3))
-        return conv4
+        return conv4.transpose(1, 2)
 

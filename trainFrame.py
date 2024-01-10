@@ -1,8 +1,6 @@
-import matplotlib.pyplot as plt
-
 import DoaMethods
 import torch.utils.data
-from configs import config, name
+from DoaMethods.configs import config, name, UnfoldingMethods, DataMethods
 
 dataset = DoaMethods.MakeDataset(config['data_path'])
 print(len(dataset))
@@ -29,25 +27,23 @@ for epoch in range(config['epoch']+1):
     model.train()
     mse_train_last = 0
     iii = 0
-    for covariance_vector, label in train_loader:
+    for data, label in train_loader:
         mse_loss = 0
         label = label.to(config['device'])
         # if epoch <= config['warmup_epoch']:
         #     label /= torch.sqrt(torch.tensor(3))
-        covariance_vector = covariance_vector.to(config['device'])
-        output, layers_output = model(covariance_vector)
-        if config['LF']:
-            for i in range(config['num_layers']):
-                mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32))) * (
-                        torch.log(torch.tensor(i + 2)))
-        else:
+        data = data.to(config['device'])
+        if name in UnfoldingMethods:
+            output, layers_output = model(data)
+            if config['LF']:
+                for i in range(config['num_layers']):
+                    mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32))) * (
+                            torch.log(torch.tensor(i + 2)))
+            else:
+                mse_loss = loss(output.to(torch.float32), label.to(torch.float32))
+        elif name in DataMethods:
+            output = model(data)
             mse_loss = loss(output.to(torch.float32), label.to(torch.float32))
-        # if epoch == 0:
-        # for nl in range(config['num_layers']):
-        #     plt.plot(label[0].detach().numpy())
-        #     plt.plot(layers_output[0, nl].detach().numpy())
-        #     plt.show()
-        # nl = 0
         mse_loss.backward()
         optimizer.step()
         optimizer.zero_grad()
@@ -66,15 +62,19 @@ for epoch in range(config['epoch']+1):
             #     label /= torch.sqrt(torch.tensor(3))
             covariance_array = covariance_array.to(config['device'])
             loss_value = 0
-            output, layers_output_val = model(covariance_array)
-            if config['LF']:
-                for i in range(config['num_layers']):
-                    loss_value = loss_value + (
-                        loss(layers_output_val[:, i].to(torch.float32), label.to(torch.float32))) * (
-                                         torch.log(torch.tensor(i + 2)))
-            else:
-                loss_value = loss(output.to(torch.float32), label.to(torch.float32))
-            mse_val_last += loss_value.item()
+            if name in UnfoldingMethods:
+                output, layers_output_val = model(covariance_array)
+                if config['LF']:
+                    for i in range(config['num_layers']):
+                        loss_value = loss_value + (
+                            loss(layers_output_val[:, i].to(torch.float32), label.to(torch.float32))) * (
+                                             torch.log(torch.tensor(i + 2)))
+                else:
+                    loss_value = loss(output.to(torch.float32), label.to(torch.float32))
+                mse_val_last += loss_value.item()
+            elif name in DataMethods:
+                output = model(covariance_array)
+                mse_val_last += loss(output.to(torch.float32), label.to(torch.float32)).item()
     mse_val_last /= len(val_loader)
     print(f"Epoch: {epoch}, Train Loss: {mse_train_last}, Valid Loss: {mse_val_last}")
 

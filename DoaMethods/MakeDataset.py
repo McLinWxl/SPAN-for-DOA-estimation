@@ -1,8 +1,8 @@
 import h5py
 import torch.utils.data
-import matplotlib.pyplot as plt
 from DoaMethods.functions import denoise_covariance, min_max_norm
 import numpy
+from DoaMethods.configs import name, UnfoldingMethods, DataMethods
 
 
 class MakeDataset(torch.utils.data.Dataset):
@@ -16,7 +16,9 @@ class MakeDataset(torch.utils.data.Dataset):
     """
     def __init__(self, path):
         dataset = h5py.File(path)
+        self.dataset_h5 = dataset
         covariance_matrix = dataset['CovarianceMatrix'][()]
+        self.covariance_matrix_clean = covariance_matrix
         label = dataset['LabelPower'][()]
         self.dictionary = dataset['Dictionary'][()]
         pseudo_spectrum = dataset['PseudoSpectrum'][()]
@@ -27,7 +29,8 @@ class MakeDataset(torch.utils.data.Dataset):
         # plt.matshow(covariance_matrix[0, 0:4, 0:4].reshape(-1, 1).real, cmap=plt.cm.Reds)
         # plt.matshow(np.matmul(self.dictionary.transpose(1, 0).conj(), covariance_matrix[12000].reshape(-1, 1)).real, cmap=plt.cm.Reds)
         # plt.show()
-        len_dataset, num_mesh, num_sources = pseudo_spectrum.shape
+        len_dataset, num_mesh, _ = pseudo_spectrum.shape
+        self.num_meshes = num_mesh
         num_sensors = covariance_matrix.shape[1]
 
         self.label = label.reshape(len_dataset, num_mesh, 1)
@@ -35,9 +38,20 @@ class MakeDataset(torch.utils.data.Dataset):
         # self.label /= numpy.sqrt(2)
         self.covariance_matrix = denoise_covariance(covariance_matrix)
         self.covariance_vector = self.covariance_matrix.transpose(0, 2, 1).reshape(len_dataset, num_sensors ** 2, 1)
-
+        if len(dataset["PseudoSpectrum"].shape) == 3:
+            self.pseudo_spectrum = (dataset["PseudoSpectrum"] - numpy.min(dataset["PseudoSpectrum"])) / \
+                                  (numpy.max(dataset["PseudoSpectrum"]) - numpy.min(dataset["PseudoSpectrum"]))
+            a = 1
+        elif len(dataset["PseudoSpectrum"].shape) == 4:
+            self.pseudo_spectrum = (dataset["PseudoSpectrum"] - numpy.min(dataset["PseudoSpectrum"])) / \
+                                  (numpy.max(dataset["PseudoSpectrum"]) - numpy.min(dataset["PseudoSpectrum"]))
+        else:
+            raise ValueError("Wrong dimension of PseudoSpectrum")
     def __getitem__(self, index):
-        return self.covariance_vector[index], self.label[index]
+        if name in UnfoldingMethods:
+            return self.covariance_vector[index], self.label[index]
+        elif name in DataMethods:
+            return self.pseudo_spectrum[index], self.label[index]
 
     def get_dictionary(self):
         return self.dictionary

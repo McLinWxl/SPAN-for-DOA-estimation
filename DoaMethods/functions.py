@@ -29,6 +29,8 @@ class ReadModel:
         elif name == 'CPSS':
             model = (DoaMethods.UnfoldingMethods.CPSS_LISTA(dictionary=dictionary, num_layers=num_layers)
                      .to(device))
+        elif name == 'DCNN':
+            model = (DoaMethods.DataMethods.DCNN().to(device))
         else:
             raise ValueError("No such model")
         self.model = model

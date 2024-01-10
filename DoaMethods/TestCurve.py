@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 from DoaMethods.functions import denoise_covariance, ReadModel, timer, find_peak
+from DoaMethods.configs import UnfoldingMethods, DataMethods, ModelMethods, UnfoldingMethods
 import DoaMethods
 import torch
 from rich.progress import track
@@ -13,6 +14,7 @@ class TestCurve:
     def __init__(self, dir_test, resolution=1, num_sources=2):
         test_mat = h5py.File(dir_test, 'r')
         self.label = test_mat["LabelPower"][()].reshape(*test_mat["LabelPower"].shape, 1)
+        self.covariance_matrix_clean = test_mat["CovarianceMatrix"][()]
         self.covariance_matrix = denoise_covariance(test_mat["CovarianceMatrix"][()]) if len(
             test_mat["CovarianceMatrix"].shape) == 3 else \
             np.array([denoise_covariance(mat) for mat in test_mat["CovarianceMatrix"]])
@@ -53,13 +55,41 @@ class TestCurve:
         prediction = torch.zeros((self.num_lists, self.num_id, self.num_mesh, 1))
         prediction_layers = torch.zeros((self.num_lists, self.num_id, self.num_layers, self.num_mesh, 1))
         with torch.no_grad():
-            for list_idx in track(range(self.num_lists), description="Ada-LISTA"):
-                for idx in range(self.num_id):
-                    cor_array_item = torch.unsqueeze(torch.from_numpy(self.covariance_array[list_idx, idx]), dim=0)
-                    prediction[list_idx, idx], prediction_layers[list_idx, idx] = model(cor_array_item)
-                    # plt.plot(prediction[list_idx, idx].detach().numpy())
-                    # plt.show()
+            if name in UnfoldingMethods:
+                for list_idx in track(range(self.num_lists), description="Ada-LISTA"):
+                    for idx in range(self.num_id):
+                        cor_array_item = torch.unsqueeze(torch.from_numpy(self.covariance_array[list_idx, idx]), dim=0)
+                        prediction[list_idx, idx], prediction_layers[list_idx, idx] = model(cor_array_item)
+            elif name == 'DCNN':
+                for list_idx in track(range(self.num_lists), description="DCNN"):
+                    for idx in range(self.num_id):
+                        cor_array_item = torch.unsqueeze(torch.from_numpy(self.PseudoSpectrum[list_idx, idx]), dim=0)
+                        prediction[list_idx, idx] = model(cor_array_item)
+
         return prediction, prediction_layers
+
+    def test_alg(self, name, **kwargs):
+        prediction = np.zeros((self.num_lists, self.num_id, self.num_mesh, 1))
+        algorithm = DoaMethods.ModelMethods.ModelMethods(dictionary=self.dictionary)
+        if name == 'ISTA':
+            for list_idx in track(range(self.num_lists), description="ISTA"):
+                for idx in range(self.num_id):
+                    prediction[list_idx, idx] = (algorithm.ISTA(self.covariance_array[list_idx, idx]))
+        elif name == 'MUSIC':
+            for list_idx in track(range(self.num_lists), description="ISTA"):
+                for idx in range(self.num_id):
+                    prediction[list_idx, idx] = (algorithm.MUSIC(self.covariance_matrix_clean[list_idx, idx]))
+        elif name == 'SBL':
+            for list_idx in track(range(self.num_lists), description="SBL"):
+                for idx in range(self.num_id):
+                    prediction[list_idx, idx] = (algorithm.SBL(self.raw_data[list_idx, idx]))
+        elif name == 'MVDR':
+            for list_idx in track(range(self.num_lists), description="MVDR"):
+                for idx in range(self.num_id):
+                    prediction[list_idx, idx] = (algorithm.MVDR(self.covariance_matrix_clean[list_idx, idx]))
+        else:
+            raise ValueError("Wrong name!")
+        return prediction
 
     def find_peak(self, predict):
         num_lists, num_id, _, _ = predict.shape

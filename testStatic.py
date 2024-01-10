@@ -1,18 +1,29 @@
 import DoaMethods
-from configs import config_test_SNR as config
-from configs import name
+from DoaMethods.configs import config_test_SNR as config
+from DoaMethods.configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMethods
 import matplotlib.pyplot as plt
 
 TestCurve = DoaMethods.TestCurve(dir_test=config['data_path'])
-AMI_predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_300.pth",
-                                      num_layers=config['num_layers'], device=config['device'])
-AMI_peak = TestCurve.find_peak(AMI_predict.detach().numpy())
-_, AMI_RMSE, AMI_NMSE, AMI_prob = TestCurve.calculate_error(AMI_peak)
+if name in UnfoldingMethods or name in DataMethods:
+    if is_checkpoint:
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
+                                          num_layers=config['num_layers'], device=config['device'])
+    else:
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_30.pth",
+                                          num_layers=config['num_layers'], device=config['device'])
+    peak = TestCurve.find_peak(predict.detach().numpy())
+
+elif name in ModelMethods:
+    predict = TestCurve.test_alg(name=name)
+    peak = TestCurve.find_peak(predict)
+else:
+    raise ValueError("Wrong name!")
+_, RMSE, NMSE, prob = TestCurve.calculate_error(peak)
 
 plt.style.use(['science', 'ieee', 'grid'])
 snr_list = [i for i in range(-12, 13, 1)]
 
-plt.plot(snr_list, AMI_RMSE, label='AMI')
+plt.plot(snr_list, RMSE, label=name)
 plt.xlabel('SNR/dB')
 plt.ylim(1e-1, 30)
 plt.ylabel('RMSE/$^{\circ}$')
@@ -24,7 +35,7 @@ plt.savefig(f"{config['figure_path']}/varSNR_RMSE.pdf")
 plt.show()
 plt.close()
 
-plt.plot(snr_list, AMI_NMSE, label='AMI')
+plt.plot(snr_list, NMSE, label=name)
 plt.xlabel('SNR/dB')
 plt.ylabel('NMSE/dB')
 plt.title("NMSE vs SNR")
@@ -38,7 +49,7 @@ plt.close()
 with open(f"{config['result_path']}/varSNR{config['testSNR_interval']}.csv", 'w') as f:
     f.write("SNR, RMSE, NMSE, prob\n")
     for i in range(len(snr_list)):
-        f.write(f"{snr_list[i]}, {AMI_RMSE[i]}, {AMI_NMSE[i]}, {AMI_prob[i]}\n")
+        f.write(f"{snr_list[i]}, {RMSE[i]}, {NMSE[i]}, {prob[i]}\n")
 
 
 
