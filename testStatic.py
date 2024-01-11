@@ -1,6 +1,6 @@
 import DoaMethods
-from DoaMethods.configs import config_test_static as config
-from DoaMethods.configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMethods
+from configs import config_test_static as config
+from configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMethods
 import matplotlib.pyplot as plt
 
 mode = config['mode']

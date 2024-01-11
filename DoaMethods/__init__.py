@@ -5,3 +5,4 @@ import DoaMethods.DataMethods
 import DoaMethods.ModelMethods
 from DoaMethods.TestCurve import TestCurve
 import torch
+import DoaMethods.configs

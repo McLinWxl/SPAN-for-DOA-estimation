@@ -2,18 +2,19 @@ import numpy as np
 
 import DoaMethods
 import torch.utils.data
-from DoaMethods.configs import config_test as config
-from DoaMethods.configs import name, DataMethods, UnfoldingMethods, ModelMethods, is_checkpoint
+from configs import config_test as config
+from configs import name, DataMethods, UnfoldingMethods, ModelMethods, is_checkpoint
 import matplotlib.pyplot as plt
 import numpy
 from DoaMethods.functions import ReadRaw
 
-epoch_read = config['epoch']
+DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
+
 raw, label = ReadRaw(config['data_path'])
 dataset = DoaMethods.MakeDataset(raw)
 print(len(dataset))
 
-loader = torch.utils.data.DataLoader(dataset, batch_size=config['batch_size'], shuffle=False)
+loader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), shuffle=False)
 
 dictionary_numpy = dataset.dictionary
 dictionary = torch.from_numpy(dataset.dictionary)

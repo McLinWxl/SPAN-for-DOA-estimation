@@ -1,8 +1,12 @@
 import DoaMethods
 import torch.utils.data
-from DoaMethods.configs import config, name, UnfoldingMethods, DataMethods
+from configs import name, config, UnfoldingMethods, DataMethods, ModelMethods
+from DoaMethods.functions import ReadRaw
 
-dataset = DoaMethods.MakeDataset(config['data_path'])
+DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
+
+raw_data, label = ReadRaw(config['data_path'])
+dataset = DoaMethods.MakeDataset(raw_data)
 print(len(dataset))
 train_set, valid_set = torch.utils.data.random_split(dataset,
                                                      [int(len(dataset) * 0.8),
@@ -10,7 +14,7 @@ train_set, valid_set = torch.utils.data.random_split(dataset,
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=config['batch_size'], shuffle=True)
 val_loader = torch.utils.data.DataLoader(valid_set, batch_size=config['batch_size'], shuffle=False)
 
-dictionary = torch.from_numpy(dataset.get_dictionary())
+dictionary = torch.from_numpy(dataset.dictionary)
 
 model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).get_model()
 loss = torch.nn.MSELoss()

@@ -1,7 +1,7 @@
 import h5py
 import numpy as np
 from DoaMethods.functions import denoise_covariance, ReadModel, timer, find_peak
-from DoaMethods.configs import UnfoldingMethods, DataMethods, ModelMethods, UnfoldingMethods
+from DoaMethods.configs import UnfoldingMethods, DataMethods, ModelMethods
 import DoaMethods
 import torch
 from rich.progress import track

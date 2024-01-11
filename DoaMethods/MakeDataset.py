@@ -2,7 +2,10 @@ import h5py
 import torch.utils.data
 from DoaMethods.functions import denoise_covariance, min_max_norm, ReadRaw
 import numpy
-from DoaMethods.configs import name, UnfoldingMethods, DataMethods
+from configs import name, UnfoldingMethods, DataMethods, ModelMethods
+
+import DoaMethods.configs
+DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
 
 
 class MakeDataset(torch.utils.data.Dataset):
@@ -67,13 +70,15 @@ class MakeDataset(torch.utils.data.Dataset):
         return psudo_spectrum
 
     def __getitem__(self, index):
-        if name in ["AMI", "LISTA", "CPSS"]:
+        if name in UnfoldingMethods:
             covariance_matrix_denoised = self.cal_covariance_matrix_denoised()
             covariance_vector = covariance_matrix_denoised.transpose(0, 2, 1).reshape(self.samples, self.num_sensors ** 2, 1)
             return covariance_vector[index], self.label[index]
         elif name in DataMethods:
             pseudo_spectrum = self.cal_psuedo_spectrum()
             return pseudo_spectrum[index], self.label[index]
+        else:
+            raise ValueError("Wrong name!")
 
     def __len__(self):
         return len(self.label)
