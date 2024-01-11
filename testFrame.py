@@ -137,7 +137,7 @@ for idx in idxs:
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()
-            plt.show()
+            # plt.show()
             plt.savefig(f"{config['figure_path']}/output_{idx}.pdf")
             plt.show()
 

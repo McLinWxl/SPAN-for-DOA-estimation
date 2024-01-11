@@ -3,7 +3,7 @@ abs_path = os.path.abspath(os.path.dirname(__file__))
 abs_path = os.path.dirname(abs_path)
 
 
-name = 'ISTA'
+name = 'DCNN'
 # LISTA, CPSS, AMI,
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
@@ -14,8 +14,8 @@ num_layers = 10
 num_layers_test = 10
 is_checkpoint = True
 ####################
-mode = 'Snapshots'  # SNR, Snapshots, Separation
-testSNR_interval = 6
+mode = 'SNR'  # SNR, Snapshots, Separation
+testSNR_interval = 16
 
 UnfoldingMethods = ['LISTA', 'CPSS', 'AMI']
 DataMethods = ['DCNN']

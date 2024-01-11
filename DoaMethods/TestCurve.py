@@ -7,58 +7,37 @@ import torch
 from rich.progress import track
 import matplotlib.pyplot as plt
 import itertools
+from DoaMethods.MakeDataset import MakeDataset
 
 
 class TestCurve:
 
-    def __init__(self, dir_test, resolution=1, num_sources=2):
+    def __init__(self, dir_test, resolution=1, num_sources=2, num_meshes=121):
         test_mat = h5py.File(dir_test, 'r')
-        self.label = test_mat["LabelPower"][()].reshape(*test_mat["LabelPower"].shape, 1)
-        self.covariance_matrix_clean = test_mat["CovarianceMatrix"][()]
-        self.covariance_matrix = denoise_covariance(test_mat["CovarianceMatrix"][()]) if len(
-            test_mat["CovarianceMatrix"].shape) == 3 else \
-            np.array([denoise_covariance(mat) for mat in test_mat["CovarianceMatrix"]])
         self.raw_data = test_mat["RawData"][()]
-        self.dictionary = test_mat['Dictionary'][()]
-        self.DOA_train = test_mat["DOA_train"][()]
-        # self.DOA_train = test_mat["DOA_train"][()].T.reshape(1, *test_mat["DOA_train"].shape[:3])
+        assert len(self.raw_data.shape) == 4
         self.num_sources = num_sources
-        pseudo_spectrum = test_mat["PseudoSpectrum"][()]
-        if len(pseudo_spectrum.shape) == 3:
-            pseudo_spectrum = pseudo_spectrum.transpose(0, 2, 1)
-            S_est_norm = np.zeros_like(pseudo_spectrum)
-            for i in range(pseudo_spectrum.shape[0]):
-                S_est_norm[i, 0, :] = (pseudo_spectrum[i, 0, :] - np.min(pseudo_spectrum[i, 0, :])) / (
-                        np.max(pseudo_spectrum[i, 0, :]) - np.min(pseudo_spectrum[i, 0, :]))
-            S_est = S_est_norm
-            self.covarianceMatrix_clean = self.covariance_matrix_clean.reshape(1, -1, 8, 8)
-            self.covariance_matrix = self.covariance_matrix.reshape(1, -1, 8, 8)
-            self.num_mesh = self.label.shape[1]
-            # DEBUG: Data generator with wrong shape
-            self.DOA_train = self.DOA_train.reshape(1, 2, -1).transpose(0, 2, 1)
-        elif len(pseudo_spectrum.shape) == 4:
-            pseudo_spectrum = pseudo_spectrum.transpose(0, 1, 3, 2)
-            S_est_norm = np.zeros_like(pseudo_spectrum)
-            for i in range(pseudo_spectrum.shape[0]):
-                for j in range(pseudo_spectrum.shape[1]):
-                    S_est_norm[i, j, 0, :] = (pseudo_spectrum[i, j, 0, :] - np.min(pseudo_spectrum[i, j, 0, :])) / (
-                            np.max(pseudo_spectrum[i, j, 0, :]) - np.min(pseudo_spectrum[i, j, 0, :]))
-            S_est = S_est_norm
-            self.num_mesh = self.label.shape[2]
-        else:
-            raise ValueError("Wrong dimension of PseudoSpectrum")
-        self.pseudo_spectrum = S_est
+        self.num_meshes = num_meshes
+        self.num_lists, self.samples, self.num_sensors, self.num_snapshots = self.raw_data.shape
+        self.label = test_mat["LabelPower"][()].reshape(self.num_lists, self.samples, 1, -1)
+        self.covariance_matrix_clean = np.zeros((self.num_lists, self.samples, self.num_sensors, self.num_sensors)) + 1j * np.zeros((self.num_lists, self.samples, self.num_sensors, self.num_sensors))
+        self.covariance_vector = np.zeros((self.num_lists, self.samples, self.num_sensors ** 2, 1)) + 1j * np.zeros((self.num_lists, self.samples, self.num_sensors ** 2, 1))
+        self.pseudo_spectrum = np.zeros((self.num_lists, self.samples, 2, num_meshes))
+        for i in range(self.num_lists):
+            dataset = MakeDataset(self.raw_data[i], self.label[i])
+            self.covariance_matrix_clean[i] = dataset.cal_covariance_matrix_clean()
+            self.covariance_vector[i] = dataset.cal_covariance_vector()
+            self.pseudo_spectrum[i] = dataset.cal_psuedo_spectrum()
+            if i == 0:
+                self.dictionary = dataset.dictionary
 
-        self.num_lists, self.num_id, self.num_sensors, _ = self.covariance_matrix.shape
-
-        self.label = self.label.reshape(self.num_lists, self.num_id, self.num_mesh, 1)
-        self.num_sensors, self.num_snapshots = self.raw_data.shape[-2::]
-        self.covariance_array = self.covariance_matrix.transpose(0, 1, 3, 2).reshape(self.num_lists, self.num_id,
-                                                                                     self.num_sensors ** 2, 1)
-        # self.DOA_train = self.DOA_train.T.reshape(1, self.num_id, 2) if len(self.covariance_matrix.shape) == 3 else self.DOA_train
-
-        self.angles = np.linspace(-0.5 * (self.num_mesh - 1) * resolution, 0.5 * (self.num_mesh - 1) * resolution,
-                                  self.num_mesh)
+        self.angles = np.linspace(-0.5 * (self.num_meshes - 1) * resolution, 0.5 * (self.num_meshes - 1) * resolution,
+                                  self.num_meshes)
+        # Find the non-zero index of the label
+        self.DOA_train = np.zeros((self.num_lists, self.samples, self.num_sources))
+        for i in range(self.num_lists):
+            for j in range(self.samples):
+                self.DOA_train[i, j] = np.where(self.label[i, j] != 0)[1] - (self.num_meshes - 1) / 2
 
     @timer
     def test_model(self, name, model_dir, **kwargs):
@@ -67,40 +46,40 @@ class TestCurve:
         dictionary = torch.from_numpy(self.dictionary)
         model = ReadModel(name=name, dictionary=dictionary, num_layers=self.num_layers, device=device).load_model(model_dir)
         model.eval()
-        prediction = torch.zeros((self.num_lists, self.num_id, self.num_mesh, 1))
-        prediction_layers = torch.zeros((self.num_lists, self.num_id, self.num_layers, self.num_mesh, 1))
+        prediction = torch.zeros((self.num_lists, self.samples, self.num_meshes, 1))
+        prediction_layers = torch.zeros((self.num_lists, self.samples, self.num_layers, self.num_meshes, 1))
         with torch.no_grad():
             if name in UnfoldingMethods:
                 for list_idx in track(range(self.num_lists), description="Ada-LISTA"):
-                    for idx in range(self.num_id):
-                        cor_array_item = torch.unsqueeze(torch.from_numpy(self.covariance_array[list_idx, idx]), dim=0)
+                    for idx in range(self.samples):
+                        cor_array_item = torch.unsqueeze(torch.from_numpy(self.covariance_vector[list_idx, idx]), dim=0)
                         prediction[list_idx, idx], prediction_layers[list_idx, idx] = model(cor_array_item)
             elif name == 'DCNN':
                 for list_idx in track(range(self.num_lists), description="DCNN"):
-                    for idx in range(self.num_id):
+                    for idx in range(self.samples):
                         cor_array_item = torch.unsqueeze(torch.from_numpy(self.pseudo_spectrum[list_idx, idx]), dim=0)
                         prediction[list_idx, idx] = model(cor_array_item)
 
         return prediction, prediction_layers
 
     def test_alg(self, name, **kwargs):
-        prediction = np.zeros((self.num_lists, self.num_id, self.num_mesh, 1))
+        prediction = np.zeros((self.num_lists, self.samples, self.num_meshes, 1))
         algorithm = DoaMethods.ModelMethods.ModelMethods(dictionary=self.dictionary)
         if name == 'ISTA':
             for list_idx in track(range(self.num_lists), description="ISTA"):
-                for idx in range(self.num_id):
-                    prediction[list_idx, idx] = (algorithm.ISTA(self.covariance_array[list_idx, idx]))
+                for idx in range(self.samples):
+                    prediction[list_idx, idx] = (algorithm.ISTA(self.covariance_vector[list_idx, idx]))
         elif name == 'MUSIC':
             for list_idx in track(range(self.num_lists), description="ISTA"):
-                for idx in range(self.num_id):
+                for idx in range(self.samples):
                     prediction[list_idx, idx] = (algorithm.MUSIC(self.covariance_matrix_clean[list_idx, idx]))
         elif name == 'SBL':
             for list_idx in track(range(self.num_lists), description="SBL"):
-                for idx in range(self.num_id):
+                for idx in range(self.samples):
                     prediction[list_idx, idx] = (algorithm.SBL(self.raw_data[list_idx, idx]))
         elif name == 'MVDR':
             for list_idx in track(range(self.num_lists), description="MVDR"):
-                for idx in range(self.num_id):
+                for idx in range(self.samples):
                     prediction[list_idx, idx] = (algorithm.MVDR(self.covariance_matrix_clean[list_idx, idx]))
         else:
             raise ValueError("Wrong name!")
@@ -110,13 +89,13 @@ class TestCurve:
         num_lists, num_id, _, _ = predict.shape
         peak = np.zeros((num_lists, num_id, 2))
         for list_idx, idx in itertools.product(range(num_lists), range(num_id)):
-            peak[list_idx, idx] = find_peak(predict[list_idx, idx].reshape(1, self.num_mesh, 1), num_sources=2).reshape(
+            peak[list_idx, idx] = find_peak(predict[list_idx, idx].reshape(1, self.num_meshes, 1), num_sources=2).reshape(
                 -1)
         return peak
 
     def calculate_error(self, peak):
         """
-        :param peak: (num_lists, num_id, 2)
+        :param peak: (num_lists, samples, 2)
         :return: error, RMSE, NMSE, prob
         """
         num_list, num_id, _ = peak.shape
@@ -139,7 +118,6 @@ class TestCurve:
                     if error[idx, i] > 4.4:
                         error[idx, i] = 10
             RMSE[snr] = np.sqrt(np.mean(error ** 2))
-            # NMSE in LaTeX: \frac{1}{N}\sum_{i=1}^{N}\frac{\left(\hat{\theta}_{i}-\theta_{i}\right)^{2}}{\theta_{i}^{2}}
             NMSE[snr] = 10 * np.log10(np.mean(error ** 2) / np.mean(DOA_train_st[snr] ** 2))
             prob[snr] = prob[snr] / num_id
 
