@@ -13,8 +13,8 @@ num_layers = 10
 num_layers_test = 10
 is_checkpoint = True
 ####################
-mode = 'SNR'  # SNR, Snapshots, Separation
-testSNR_interval = 16
+mode = 'Snapshots'  # SNR, Snapshots, Separation
+testSNR_interval = 26
 ####################
 batch_size = 128
 lr = 0.001

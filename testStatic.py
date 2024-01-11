@@ -28,7 +28,7 @@ if mode == 'SNR':
 elif mode == 'Separation':
     x_tricks = [i for i in range(2, 21, 1)]
 elif mode == 'Snapshots':
-    x_tricks = [i for i in range(50, 401, 10)]
+    x_tricks = [i for i in range(10, 400, 5)]
 
 plt.plot(x_tricks, RMSE, label=name)
 if mode == 'SNR':
