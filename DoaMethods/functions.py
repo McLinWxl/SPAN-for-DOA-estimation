@@ -3,6 +3,7 @@ import numpy as np
 import scipy.signal
 import torch
 import DoaMethods
+import h5py
 
 
 def timer(func):
@@ -16,6 +17,19 @@ def timer(func):
         return result
 
     return func_wrapper
+
+
+def ReadRaw(path):
+    """
+    Read .h5 file
+    :param path: path of .h5 file
+    :return: raw_data
+    """
+    with h5py.File(path, 'r') as f:
+        raw_data = f["RawData"][()]
+        assert len(raw_data.shape) == 3
+        label = f["LabelPower"][()].reshape(raw_data.shape[0], 1, -1)
+    return raw_data, label
 
 
 class ReadModel:

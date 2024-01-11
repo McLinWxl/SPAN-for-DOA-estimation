@@ -3,23 +3,26 @@ import numpy as np
 import DoaMethods
 import torch.utils.data
 from DoaMethods.configs import config_test as config
-from DoaMethods.configs import name, DataMethods, UnfoldingMethods, ModelMethods
+from DoaMethods.configs import name, DataMethods, UnfoldingMethods, ModelMethods, is_checkpoint
 import matplotlib.pyplot as plt
 import numpy
+from DoaMethods.functions import ReadRaw
 
 epoch_read = config['epoch']
-
-dataset = DoaMethods.MakeDataset(config['data_path'])
+raw, label = ReadRaw(config['data_path'])
+dataset = DoaMethods.MakeDataset(raw)
 print(len(dataset))
 
 loader = torch.utils.data.DataLoader(dataset, batch_size=config['batch_size'], shuffle=False)
 
-dictionary_numpy = dataset.get_dictionary()
-dictionary = torch.from_numpy(dataset.get_dictionary())
+dictionary_numpy = dataset.dictionary
+dictionary = torch.from_numpy(dataset.dictionary)
 
 if name in UnfoldingMethods or name in DataMethods:
-    model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}")
-    # model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/best.pth")
+    if is_checkpoint:
+        model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}")
+    else:
+        model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/model_0.pth")
 
     model.eval()
     mse_val_last = 0
@@ -38,25 +41,25 @@ elif name in ModelMethods:
     algorithm = DoaMethods.ModelMethods.ModelMethods(dictionary=dictionary_numpy)
     predict = np.zeros((len(dataset), dataset.num_meshes, 1))
     if name == 'ISTA':
-        covariance_vector = dataset.covariance_vector
+        covariance_vector = dataset.cal_covariance_vector()
         label = dataset.label
         for i in range(covariance_vector.shape[0]):
             predict[i] = algorithm.ISTA(covariance_vector[i])
 
     elif name == 'MUSIC':
-        covariance_matrix = dataset.covariance_matrix_clean
+        covariance_matrix = dataset.cal_covariance_matrix_clean()
         label = dataset.label
         for i in range(covariance_matrix.shape[0]):
             predict[i] = algorithm.MUSIC(covariance_matrix[i])
 
     elif name == 'SBL':
-        raw_data = dataset.dataset_h5['RawData'][()]
+        raw_data = dataset.raw_data
         label = dataset.label
         for i in range(raw_data.shape[0]):
             predict[i] = algorithm.SBL(raw_data[i]).reshape(-1, 1)
 
     elif name == 'MVDR':
-        covariance_matrix = dataset.covariance_matrix_clean
+        covariance_matrix = dataset.cal_covariance_matrix_clean()
         label = dataset.label
         for i in range(covariance_matrix.shape[0]):
             predict[i] = algorithm.MVDR(covariance_matrix[i])
@@ -93,6 +96,7 @@ for idx in idxs:
         # ax.set_zlabel('Amp.')
         # Delete the white space around the figure
         # plt.subplots_adjust(left=0, right=0.9, bottom=0, top=1)
+        # plt.show()
         plt.savefig(f"{config['figure_path']}/layer_{idx}.pdf")
         plt.show()
         plt.close()
@@ -119,6 +123,7 @@ for idx in idxs:
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()
+            # plt.show()
             plt.savefig(f"{config['figure_path']}/output_{idx}.pdf")
             plt.show()
 
@@ -132,6 +137,7 @@ for idx in idxs:
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()
+            plt.show()
             plt.savefig(f"{config['figure_path']}/output_{idx}.pdf")
             plt.show()
 

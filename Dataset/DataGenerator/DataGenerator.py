@@ -111,6 +111,10 @@ if __name__ == '__main__':
         temp = temp / np.linalg.norm(temp, ord=2)
         S_est[i, :, 0] = np.real(temp)
         S_est[i, :, 1] = np.imag(temp)
+        # plt.plot(S_est[i, :, 0], label='Real[data]')
+        # plt.plot(S_est[i, :, 1], label='Imag[data]')
+        # plt.plot(S_label[i, :], label='Label')
+        # plt.show()
         S_abs[i, :] = np.concatenate((np.real(temp), np.imag(temp)))
         S_label[i, int(np.round(DOA_train[0, i]) - D_start)] = 1
         S_label[i, int(np.round(DOA_train[1, i]) - D_start)] = 1

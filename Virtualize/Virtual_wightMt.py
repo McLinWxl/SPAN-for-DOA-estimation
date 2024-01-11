@@ -7,6 +7,7 @@ import numpy
 
 epoch_read = config['epoch']
 
+
 dataset = DoaMethods.MakeDataset(f"{config['data_path']}")
 print(len(dataset))
 

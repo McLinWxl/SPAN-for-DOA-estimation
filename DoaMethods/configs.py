@@ -3,13 +3,13 @@ abs_path = os.path.abspath(os.path.dirname(__file__))
 abs_path = os.path.dirname(abs_path)
 
 
-name = 'AMI'
+name = 'ISTA'
 # LISTA, CPSS, AMI,
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
 
 # For LISTA, CPSS, AMI
-is_LF = False
+is_LF = True
 num_layers = 10
 num_layers_test = 10
 is_checkpoint = True

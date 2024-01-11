@@ -1,72 +1,92 @@
 import h5py
 import torch.utils.data
-from DoaMethods.functions import denoise_covariance, min_max_norm
+from DoaMethods.functions import denoise_covariance, min_max_norm, ReadRaw
 import numpy
 from DoaMethods.configs import name, UnfoldingMethods, DataMethods
 
 
 class MakeDataset(torch.utils.data.Dataset):
-    """
-    :param: h5 file path, with the following keys:
-    CovarianceMatrix: (num_samples, num_sensors, num_sensors)
-    LabelPower: (num_samples, num_mesh)
-    Dictionary: (num_sensors**2, num_mesh)
-    PseudoSpectrum: (num_samples, num_mesh, num_sources)
-    :returns: [CovarianceVector[idx], Label[idx]]
-    """
 
-    def __init__(self, path):
-        dataset = h5py.File(path)
-        self.dataset_h5 = dataset
-        covariance_matrix = dataset['CovarianceMatrix'][()]
-        self.covariance_matrix_clean = covariance_matrix
-        label = dataset['LabelPower'][()]
-        self.dictionary = dataset['Dictionary'][()]
-        # To virtualization in Paper
-        # rawdata = dataset['RawData'][()]
-        # plt.matshow(rawdata[0, :, 0:30].imag, cmap=plt.cm.Reds)
-        # plt.matshow(covariance_matrix[0].real, cmap=plt.cm.Reds)
-        # plt.matshow(covariance_matrix[0, 0:4, 0:4].reshape(-1, 1).real, cmap=plt.cm.Reds)
-        # plt.matshow(np.matmul(self.dictionary.transpose(1, 0).conj(), covariance_matrix[12000].reshape(-1, 1)).real, cmap=plt.cm.Reds)
-        # plt.show()
-        pseudo_spectrum = dataset["PseudoSpectrum"][()]
-        len_dataset, num_mesh, _ = pseudo_spectrum.shape
-        self.num_meshes = num_mesh
-        num_sensors = covariance_matrix.shape[1]
+    def __init__(self, raw_data, label=None, **kwargs):
+        """
+        If is simulated, manifold and label are required. Else, sensor_interval is required to calculate manifold.
+        :param raw_data:
+        :param label:
+        :param manifold:
+        :param kwargs:
+        """
+        assert len(raw_data.shape) == 3  # (samples, num_sensors, num_snapshots)
+        self.samples, self.num_sensors, self.num_snapshots = raw_data.shape
+        self.raw_data = raw_data
+        self.num_sources = kwargs.get('num_sources', 2)
+        D_start = kwargs.get('D_start', -60)
+        D_stop = kwargs.get('D_stop', 60)
+        interval = kwargs.get('interval', 1)
+        self.theta = numpy.arange(D_start, D_stop + 1, interval).reshape(-1)
+        self.num_meshes = len(self.theta)
 
-        self.label = label.reshape(len_dataset, num_mesh, 1)
-        self.label /= numpy.linalg.norm(self.label, axis=1, keepdims=True)
-        # self.label /= numpy.sqrt(2)
-        self.covariance_matrix = denoise_covariance(covariance_matrix)
-        self.covariance_vector = self.covariance_matrix.transpose(0, 2, 1).reshape(len_dataset, num_sensors ** 2, 1)
-        if len(pseudo_spectrum.shape) == 3:
-            pseudo_spectrum = pseudo_spectrum.transpose(0, 2, 1)
-            S_est_norm = numpy.zeros_like(pseudo_spectrum)
-            for i in range(pseudo_spectrum.shape[0]):
-                S_est_norm[i, 0, :] = (pseudo_spectrum[i, 0, :] - numpy.min(pseudo_spectrum[i, 0, :])) / (
-                        numpy.max(pseudo_spectrum[i, 0, :]) - numpy.min(pseudo_spectrum[i, 0, :]))
-            S_est = S_est_norm
-            self.covarianceMatrix_clean = self.covariance_matrix_clean.reshape(1, -1, 8, 8)
-        elif len(pseudo_spectrum.shape) == 4:
-            pseudo_spectrum = pseudo_spectrum.transpose(0, 1, 3, 2)
-            S_est_norm = numpy.zeros_like(pseudo_spectrum)
-            for i in range(pseudo_spectrum.shape[0]):
-                for j in range(pseudo_spectrum.shape[1]):
-                    S_est_norm[i, j, 0, :] = (pseudo_spectrum[i, j, 0, :] - numpy.min(pseudo_spectrum[i, j, 0, :])) / (
-                            numpy.max(pseudo_spectrum[i, j, 0, :]) - numpy.min(pseudo_spectrum[i, j, 0, :]))
-            S_est = S_est_norm
-        else:
-            raise ValueError("Wrong dimension of PseudoSpectrum")
-        self.pseudo_spectrum = S_est
+        self.sensor_interval = kwargs.get('sensor_interval', 0.5)
+        self.wavelength = kwargs.get('wavelength', 1)
+        self.manifold = self.cal_manifold(self.num_sensors, self.sensor_interval, self.wavelength)
+        self.label = label.reshape(self.samples, self.num_meshes, 1) if label is not None else numpy.zeros((self.samples, self.num_meshes, 1))
+        self.dictionary = self.cal_dictionary()
+
+    def cal_manifold(self, num_sensors, sensor_interval, wavelength):
+        return numpy.exp(1j * numpy.pi * 2 * sensor_interval * numpy.arange(num_sensors)[:, numpy.newaxis] * numpy.sin(numpy.deg2rad(self.theta)) / wavelength)
+
+    def cal_dictionary(self):
+        dictionary = numpy.zeros((self.num_sensors**2, self.num_meshes), dtype=numpy.complex64)
+        for i in range(self.num_sensors):
+            s = numpy.exp(-1j * numpy.pi * 2 * self.sensor_interval * i * numpy.sin(numpy.deg2rad(self.theta)) / self.wavelength)
+            B = numpy.diag(s)
+            phi = numpy.matmul(self.manifold, B)
+            dictionary[i*self.num_sensors:(i+1)*self.num_sensors, :] = phi
+        return dictionary
+
+    def cal_covariance_matrix_clean(self):
+        covariance_matrix = numpy.matmul(self.raw_data, self.raw_data.conj().transpose(0, 2, 1)) / self.num_snapshots
+        return covariance_matrix
+
+    def cal_covariance_matrix_denoised(self):
+        covariance_matrix = denoise_covariance(self.cal_covariance_matrix_clean())
+        return covariance_matrix
+
+    def cal_covariance_vector(self):
+        covariance_vector = self.cal_covariance_matrix_denoised().transpose(0, 2, 1).reshape(self.samples, self.num_sensors ** 2, 1)
+        return covariance_vector
+
+    def cal_psuedo_spectrum(self):
+        psudo_spectrum = numpy.zeros((self.samples, 2, self.num_meshes), dtype=numpy.float32)
+        covariance_matrix_clean = self.cal_covariance_matrix_clean()
+        covariance_vector = covariance_matrix_clean.transpose(0, 2, 1).reshape(self.samples, self.num_sensors ** 2, 1)
+        temp = numpy.matmul(self.dictionary.conj().transpose(), covariance_vector).transpose(0, 2, 1).reshape(self.samples, 1, self.num_meshes)
+        # temp = temp / numpy.linalg.norm(temp, axis=1, keepdims=True, ord=2)
+        psudo_spectrum[:, 0, :] = numpy.real(temp).reshape(self.samples, self.num_meshes)
+        psudo_spectrum[:, 1, :] = numpy.imag(temp).reshape(self.samples, self.num_meshes)
+        psudo_spectrum[:, 0, :] = min_max_norm(psudo_spectrum[:, 0, :].reshape(self.samples, 1, self.num_meshes).transpose(0, 2, 1)).transpose(0, 2, 1).reshape(self.samples, self.num_meshes)
+        return psudo_spectrum
 
     def __getitem__(self, index):
-        if name in UnfoldingMethods:
-            return self.covariance_vector[index], self.label[index]
+        if name in ["AMI", "LISTA", "CPSS"]:
+            covariance_matrix_denoised = self.cal_covariance_matrix_denoised()
+            covariance_vector = covariance_matrix_denoised.transpose(0, 2, 1).reshape(self.samples, self.num_sensors ** 2, 1)
+            return covariance_vector[index], self.label[index]
         elif name in DataMethods:
-            return self.pseudo_spectrum[index], self.label[index]
-
-    def get_dictionary(self):
-        return self.dictionary
+            pseudo_spectrum = self.cal_psuedo_spectrum()
+            return pseudo_spectrum[index], self.label[index]
 
     def __len__(self):
         return len(self.label)
+
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    raw, label = ReadRaw("../Dataset/Data/TestSpectrum.h5")
+    dataset = MakeDataset(raw)
+    covariance_vector_clean = dataset.cal_covariance_matrix_denoised()
+    psedo_spectrum = dataset.cal_psuedo_spectrum()
+    plt.plot(psedo_spectrum[0, 0, :])
+    plt.plot(psedo_spectrum[0, 1, :])
+    plt.plot(label[0, 0, :])
+    plt.show()
+    a= 1
