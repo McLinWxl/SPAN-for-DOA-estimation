@@ -46,7 +46,7 @@ else:
 
 config = {
     'device': 'cpu',
-    'data_path': f'{abs_path}/Dataset/Data/TrainData.h5',
+    'data_path': f'{abs_path}/DataSet/Data/TrainData.h5',
     'model_path': f'{abs_path}/Model/{name_train}/',
     'figure_path': f'{abs_path}/Figure/{name_train}/',
     'result_path': f'{abs_path}/Result/{name_train}/',
@@ -61,7 +61,7 @@ config = {
 
 config_test = {
     'device': 'cpu',
-    'data_path': f'{abs_path}/Dataset/Data/TestSpectrum.h5',
+    'data_path': f'{abs_path}/DataSet/Data/TestSpectrum.h5',
     'model_path': f'{abs_path}/checkpoint/{name_test}.pth' if is_checkpoint else f'{abs_path}/Model/{name_test}/',
     'figure_path': f'{abs_path}/Figure/{name_test}/',
     'result_path': f'{abs_path}/Result/{name_test}/',
@@ -73,7 +73,7 @@ config_test_static = {
     'mode': mode, # SNR, Snapshots, Separation
     'testSNR_interval': testSNR_interval,
     'device': 'cpu',
-    'data_path': f'{abs_path}/Dataset/Data/TestData_var{mode}_{testSNR_interval}.h5' if mode == 'SNR' or mode == 'Snapshots' else f'{abs_path}/Dataset/Data/TestData_Separation_Ori.h5',
+    'data_path': f'{abs_path}/DataSet/Data/TestData_var{mode}_{testSNR_interval}.h5' if mode == 'SNR' or mode == 'Snapshots' else f'{abs_path}/Dataset/Data/TestData_Separation_Ori.h5',
     'model_path': f'{abs_path}/checkpoint/{name_test_SNR}.pth' if is_checkpoint else f'{abs_path}/Model/{name_test_SNR}/',
     'figure_path': f'{abs_path}/Figure/{name_test_SNR}/',
     'result_path': f'{abs_path}/Result/{name_test_SNR}/',

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 mode = 'Layers'
-TestCurve = DoaMethods.TestCurve(dir_test='./Dataset/Data/TestData_varLayers.h5')
+TestCurve = DoaMethods.TestCurve(dir_test='Dataset_old/Data/TestData_varLayers.h5')
 assert is_checkpoint
 predict, predict_all = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
 

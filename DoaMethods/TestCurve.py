@@ -37,7 +37,19 @@ class TestCurve:
         self.DOA_train = np.zeros((self.num_lists, self.samples, self.num_sources))
         for i in range(self.num_lists):
             for j in range(self.samples):
-                self.DOA_train[i, j] = np.where(self.label[i, j] != 0)[1] - (self.num_meshes - 1) / 2
+                true_angle = np.where(self.label[i, j] != 0)[1]
+                if len(true_angle) == num_sources:
+                    self.DOA_train[i, j] = np.where(self.label[i, j] != 0)[1] - (self.num_meshes - 1) / 2
+                elif len(true_angle) == num_sources*2:
+                    for s in range(num_sources):
+                        # calculate the true DoA by the left and right power
+                        left_index, rigth_index = true_angle[2*s], true_angle[2*s+1]
+                        left_value, right_value = self.label[s, j, 0, left_index], self.label[s, j, 0, rigth_index]
+                        truth_DOA = (left_index * left_value + rigth_index * right_value) / (left_value + right_value)
+                        self.DOA_train[i, j, s] = truth_DOA - (self.num_meshes - 1) / 2
+                else:
+                    raise ValueError("Wrong label!")
+
 
     @timer
     def test_model(self, name, model_dir, **kwargs):

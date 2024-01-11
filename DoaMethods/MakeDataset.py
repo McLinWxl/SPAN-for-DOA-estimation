@@ -33,6 +33,10 @@ class MakeDataset(torch.utils.data.Dataset):
         self.manifold = self.cal_manifold(self.num_sensors, self.sensor_interval, self.wavelength)
         self.label = label.reshape(self.samples, self.num_meshes, 1) if label is not None else numpy.zeros((self.samples, self.num_meshes, 1))
         self.dictionary = self.cal_dictionary()
+        self.covariance_matrix_clean = self.cal_covariance_matrix_clean()
+        self.covariance_matrix_denoised = self.cal_covariance_matrix_denoised()
+        self.covariance_vector = self.cal_covariance_vector()
+        self.psudo_spectrum = self.cal_psuedo_spectrum()
 
     def cal_manifold(self, num_sensors, sensor_interval, wavelength):
         return numpy.exp(1j * numpy.pi * 2 * sensor_interval * numpy.arange(num_sensors)[:, numpy.newaxis] * numpy.sin(numpy.deg2rad(self.theta)) / wavelength)
@@ -71,22 +75,19 @@ class MakeDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         if name in UnfoldingMethods:
-            covariance_matrix_denoised = self.cal_covariance_matrix_denoised()
-            covariance_vector = covariance_matrix_denoised.transpose(0, 2, 1).reshape(self.samples, self.num_sensors ** 2, 1)
-            return covariance_vector[index], self.label[index]
+            return self.covariance_vector[index], self.label[index]
         elif name in DataMethods:
-            pseudo_spectrum = self.cal_psuedo_spectrum()
-            return pseudo_spectrum[index], self.label[index]
+            return self.psudo_spectrum[index], self.label[index]
         else:
             raise ValueError("Wrong name!")
 
     def __len__(self):
-        return len(self.label)
+        return self.samples
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    raw, label = ReadRaw("../Dataset/Data/TestSpectrum.h5")
+    raw, label = ReadRaw("../Dataset_old/Data/TestSpectrum.h5")
     dataset = MakeDataset(raw)
     covariance_vector_clean = dataset.cal_covariance_matrix_denoised()
     psedo_spectrum = dataset.cal_psuedo_spectrum()
