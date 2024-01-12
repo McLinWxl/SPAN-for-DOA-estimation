@@ -2,7 +2,6 @@ import DoaMethods
 from configs import config_test_static as config
 from configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMethods
 import matplotlib.pyplot as plt
-
 mode = config['mode']
 
 TestCurve = DoaMethods.TestCurve(dir_test=config['data_path'])
@@ -28,7 +27,7 @@ if mode == 'SNR':
 elif mode == 'Separation':
     x_tricks = [i for i in range(2, 21, 1)]
 elif mode == 'Snapshots':
-    x_tricks = [i for i in range(10, 400, 5)]
+    x_tricks = [i for i in range(10, 410, 10)]
 
 plt.plot(x_tricks, RMSE, label=name)
 if mode == 'SNR':
@@ -42,7 +41,7 @@ else:
 plt.ylim(1e-1, 30)
 plt.ylabel('RMSE/$^{\circ}$')
 plt.yscale('log')
-plt.title("RMSE vs SNR")
+plt.title(f"RMSE vs {mode}")
 plt.legend(loc='upper right', prop={'size': 5})
 plt.grid(which='both', axis='both', linestyle='--', linewidth=0.1)
 plt.savefig(f"{config['figure_path']}/var{mode}_RMSE.pdf")
@@ -59,8 +58,8 @@ elif mode == 'Snapshots':
 else:
     raise ValueError("Wrong mode!")
 plt.ylabel('NMSE/dB')
-plt.title("NMSE vs SNR")
-plt.ylim(-35, -5)
+plt.title(f"NMSE vs {name}")
+plt.ylim(-45, -5)
 plt.legend(loc='upper right', prop={'size': 5})
 plt.grid(which='both', axis='both', linestyle='--', linewidth=0.1)
 plt.savefig(f"{config['figure_path']}/var{mode}_NMSE.pdf")

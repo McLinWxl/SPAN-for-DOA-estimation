@@ -2,7 +2,7 @@ import os
 abs_path = os.path.abspath(os.path.dirname(__file__))
 # abs_path = os.path.dirname(abs_path)
 
-name = 'DCNN'
+name = 'ISTA'
 # LISTA, CPSS, AMI,
 # DCNN
 # MUSIC, MVDR, SBL, ISTA

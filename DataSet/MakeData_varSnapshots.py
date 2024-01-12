@@ -27,8 +27,11 @@ elif interval == '6':
     DOAs = np.array([
          [-3.5, 2.5],
          ])
-
-num_snapshots = np.arange(10, 400, 5)
+elif interval == '16':
+    DOAs = np.array([
+         [-8.5, 7.5],
+         ])
+num_snapshots = np.arange(10, 410, 10)
 max_snapshot = np.max(num_snapshots)
 RawData = np.zeros((len(num_snapshots), len(DOAs) * configs['MC'], configs['num_sensor'], max_snapshot), dtype=np.complex64)
 Label = np.zeros((len(num_snapshots), len(DOAs) * configs['MC'], num_meshes, 1), dtype=np.float32)

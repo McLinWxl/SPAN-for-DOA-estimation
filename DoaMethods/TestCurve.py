@@ -66,6 +66,8 @@ class TestCurve:
                     for idx in range(self.samples):
                         cor_array_item = torch.unsqueeze(torch.from_numpy(self.covariance_vector[list_idx, idx]), dim=0)
                         prediction[list_idx, idx], prediction_layers[list_idx, idx] = model(cor_array_item)
+                        # plt.plot(prediction[list_idx, idx].reshape(-1))
+                        # plt.show()
             elif name == 'DCNN':
                 for list_idx in track(range(self.num_lists), description="DCNN"):
                     for idx in range(self.samples):
