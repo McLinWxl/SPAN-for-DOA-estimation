@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class DataGenerator:
-    def __init__(self, DOAs, snr_db=None, is_train=False, repeat=1, num_sensors=8, num_snapshot=256, sensor_interval=0.5, wavelength=1, num_meshes=121, bias=60):
+    def __init__(self, DOAs, snr_db=None, is_train=False, repeat=1, num_sensors=8, num_snapshot=256, sensor_interval=0.5, wavelength=1.0, num_meshes=121, bias=60.0):
         """
 
         :param DOAs: Sample, Sources

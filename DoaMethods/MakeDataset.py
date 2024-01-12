@@ -19,7 +19,9 @@ class MakeDataset(torch.utils.data.Dataset):
         :param kwargs:
         """
         assert len(raw_data.shape) == 3  # (samples, num_sensors, num_snapshots)
-        self.samples, self.num_sensors, self.num_snapshots = raw_data.shape
+        self.samples, self.num_sensors, _ = raw_data.shape
+        # calculate the number of snapshots depending on the 3rd dimension of raw_data of non-zero elements
+        self.num_snapshots = numpy.count_nonzero(raw_data[0, 0])
         self.raw_data = raw_data
         self.num_sources = kwargs.get('num_sources', 2)
         D_start = kwargs.get('D_start', -60)
@@ -52,7 +54,10 @@ class MakeDataset(torch.utils.data.Dataset):
 
     def cal_covariance_matrix_clean(self):
         covariance_matrix = numpy.matmul(self.raw_data, self.raw_data.conj().transpose(0, 2, 1)) / self.num_snapshots
-        return covariance_matrix
+        # Normalize the covariance matrix up to 1
+        covariance_matrix_norm = covariance_matrix / numpy.max(numpy.abs(covariance_matrix), axis=(1, 2), keepdims=True)
+        a = 1
+        return covariance_matrix_norm
 
     def cal_covariance_matrix_denoised(self):
         covariance_matrix = denoise_covariance(self.cal_covariance_matrix_clean())
