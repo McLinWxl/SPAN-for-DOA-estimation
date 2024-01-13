@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from DoaMethods.configs import testSNR_interval, config_test_static
+from configs import testSNR_interval, config_test_static
 
 mode = config_test_static['mode']
 names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN"]

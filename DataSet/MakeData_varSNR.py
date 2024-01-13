@@ -13,7 +13,7 @@ configs = {
     'Interval': 1,
     'num_sensor': 8,
     'num_snapshot': 256,
-    'MC': 1000
+    'MC': 100
     }
 
 Angles = np.arange(configs['Start'], configs['End'] + configs['Interval'], configs['Interval'])
@@ -21,12 +21,33 @@ num_meshes = len(Angles)
 
 if interval == '26':
     DOAs = np.array([
+         [-13.0, 13.0],
+         [-13.1, 12.9],
+         [-13.2, 12.8],
+         [-13.3, 12.7],
+         [-13.4, 12.6],
          [-13.5, 12.5],
+         [-13.6, 12.4],
+         [-13.7, 12.3],
+         [-13.8, 12.2],
+         [-13.9, 12.1],
+         [-14.0, 12.0],
          ])
 elif interval == '6':
     DOAs = np.array([
+         [-3.0, 3.0],
+         [-3.1, 2.9],
+         [-3.2, 2.8],
+         [-3.3, 2.7],
+         [-3.4, 2.6],
          [-3.5, 2.5],
+         [-3.6, 2.4],
+         [-3.7, 2.3],
+         [-3.8, 2.2],
+         [-3.9, 2.1],
+         [-4.0, 2.0],
          ])
+
 
 snr_db = np.arange(-12, 13, 1)
 RawData = np.zeros((len(snr_db), len(DOAs) * configs['MC'], configs['num_sensor'], configs['num_snapshot']), dtype=np.complex64)

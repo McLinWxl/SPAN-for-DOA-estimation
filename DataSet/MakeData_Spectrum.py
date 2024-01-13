@@ -24,9 +24,9 @@ DOAs = np.array([
      [-2.5, 2.5]
      ])
 
-DG = DataGenerator(DOAs, is_train=False, snr_db=0, repeat=30)
+DG = DataGenerator(DOAs, is_train=False, snr_db=0, repeat=1)
 RawData, Label = DG.get_raw_label()
 
-with h5py.File(f'{configs["dataset_path"]}TestSpectrum.h5', 'w') as f:
+with h5py.File(f'{configs["dataset_path"]}TestSpectrum_10p.h5', 'w') as f:
     f.create_dataset('RawData', data=RawData)
     f.create_dataset('LabelPower', data=Label)

@@ -1,8 +1,7 @@
 import os
 abs_path = os.path.abspath(os.path.dirname(__file__))
 # abs_path = os.path.dirname(abs_path)
-
-name = 'ISTA'
+name = 'AMI'
 # LISTA, CPSS, AMI,
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
@@ -11,16 +10,16 @@ name = 'ISTA'
 is_LF = True
 num_layers = 10
 num_layers_test = 10
-is_checkpoint = True
+is_checkpoint = False
 ####################
-mode = 'Snapshots'  # SNR, Snapshots, Separation
+mode = 'SNR'  # SNR, Snapshots, Separation
 testSNR_interval = 26
 ####################
 batch_size = 128
 lr = 0.001
-epoch = 800
+epoch = 600
 is_scheduler = True
-warmup_epoch = 450
+warmup_epoch = 400
 ####################
 UnfoldingMethods= ['LISTA', 'CPSS', 'AMI']
 DataMethods = ['DCNN']

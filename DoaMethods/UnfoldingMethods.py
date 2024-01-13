@@ -35,7 +35,7 @@ class LISTA(torch.nn.Module):
         covariance_vector = covariance_vector.reshape(-1, self.num_sensors_2p, 1).to(torch.complex64).to(self.device)
         batchSize = covariance_vector.shape[0]
         x_eta = torch.matmul(dictionary.conj().T, covariance_vector).real.float()
-        x_eta /= torch.norm(x_eta, dim=1, keepdim=True)
+        # x_eta /= torch.norm(x_eta, dim=1, keepdim=True)
         covariance_vector = covariance_vector.to(device)
         x_layers_virtual = torch.zeros(batchSize, self.num_layers, self.num_meshes, 1)
 
@@ -94,7 +94,7 @@ class AMI_LISTA(torch.nn.Module):
         covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector).real.float()
-        x0 /= torch.norm(x0, dim=1, keepdim=True)
+        # x0 /= torch.norm(x0, dim=1, keepdim=True)
         x_real = x0
         x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
         for layer in range(self.num_layers):
@@ -160,7 +160,7 @@ class CPSS_LISTA(torch.nn.Module):
     def forward(self, covariance_array):
         covariance_array = covariance_array.to(torch.complex64)
         eta = torch.real(torch.matmul(self.dictionary.transpose(1, 0).conj(), covariance_array))
-        eta /= torch.norm(eta, dim=1, keepdim=True)
+        # eta /= torch.norm(eta, dim=1, keepdim=True)
         eta_layers = torch.zeros(covariance_array.shape[0], self.num_layers, self.num_meshes, 1).to(self.device)
         for i in range(self.num_layers):
             W = self.gamma[i] * torch.matmul(self.weight[i], self.dictionary).transpose(1, 0).conj()

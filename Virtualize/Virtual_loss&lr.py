@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from DoaMethods.configs import config_test_static as config
+from configs import config_test_static as config
 
 
 mode = config['mode']
@@ -11,8 +11,8 @@ varSNR_dir = f"{config['result_path']}/var{mode}{config['testSNR_interval']}.csv
 # lr_dir = '/Volumes/WangXinLin/GitLibrary/UnfoldingDOA/Result/AMI-LF10_old/lr.csv'
 # loss_dir = '/Volumes/WangXinLin/GitLibrary/UnfoldingDOA/Result/AMI-LF10_old/loss.csv'
 
-is_lr = False
-is_SNR = True
+is_lr = True
+is_SNR = False
 start = 0
 if is_lr:
     epoch = np.loadtxt(lr_dir, delimiter=',', skiprows=1)[start:, 0]

@@ -35,13 +35,15 @@ class DataGenerator:
                     data_all[r, i, j], _, signal_wave_all[r, i, j] = self.signal_generate(self.DOAs[r, i, j])
                     signal_power = np.matmul(signal_wave_all[r, i, j], signal_wave_all[r, i, j].conj().T).real / self.num_snapshot
                     if np.floor(self.DOAs[r, i, j]) == np.ceil(self.DOAs[r, i, j]):
-                        self.labels[r, i, int(self.DOAs[r, i, j]) + bias, 0] = 1
+                        self.labels[r, i, int(self.DOAs[r, i, j] + bias), 0] = 1
                     else:
                         # calculate the left and right power by the distance to the two nearest mesh
                         left = int(np.floor(self.DOAs[r, i, j]) + bias)
                         right = int(np.ceil(self.DOAs[r, i, j]) + bias)
-                        left_power = (self.DOAs[r, i, j] - left + bias) / (right - left) * signal_power
-                        right_power = (right - self.DOAs[r, i, j] - bias) / (right - left) * signal_power
+                        right_power = np.square(self.DOAs[r, i, j] - left + bias) / np.square(right - left) * signal_power
+                        left_power = np.square(right - self.DOAs[r, i, j] - bias) / np.square(right - left) * signal_power
+                        # left_power = (self.DOAs[r, i, j] - left + bias) / (right - left) * signal_power
+                        # right_power = (right - self.DOAs[r, i, j] - bias) / (right - left) * signal_power
                         self.labels[r, i, left, 0] = left_power
                         self.labels[r, i, right, 0] = right_power
                     snr_db = self.snr_db if not self.is_train else np.random.uniform(-10, 0)

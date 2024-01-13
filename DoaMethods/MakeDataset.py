@@ -55,13 +55,15 @@ class MakeDataset(torch.utils.data.Dataset):
     def cal_covariance_matrix_clean(self):
         covariance_matrix = numpy.matmul(self.raw_data, self.raw_data.conj().transpose(0, 2, 1)) / self.num_snapshots
         # Normalize the covariance matrix up to 1
-        covariance_matrix_norm = covariance_matrix / numpy.max(numpy.abs(covariance_matrix), axis=(1, 2), keepdims=True)
-        a = 1
-        return covariance_matrix_norm
+        a = numpy.max(numpy.abs(covariance_matrix), axis=(1, 2), keepdims=True)
+        # covariance_matrix_norm = covariance_matrix / numpy.max(numpy.abs(covariance_matrix), axis=(1, 2), keepdims=True)
+        return covariance_matrix
 
     def cal_covariance_matrix_denoised(self):
         covariance_matrix = denoise_covariance(self.cal_covariance_matrix_clean())
-        return covariance_matrix
+        # Normalize the covariance matrix up to 1
+        covariance_matrix_norm = covariance_matrix / numpy.max(numpy.abs(covariance_matrix), axis=(1, 2), keepdims=True)
+        return covariance_matrix_norm
 
     def cal_covariance_vector(self):
         covariance_vector = self.cal_covariance_matrix_denoised().transpose(0, 2, 1).reshape(self.samples, self.num_sensors ** 2, 1)

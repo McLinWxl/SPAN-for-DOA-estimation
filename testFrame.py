@@ -7,11 +7,12 @@ from configs import name, DataMethods, UnfoldingMethods, ModelMethods, is_checkp
 import matplotlib.pyplot as plt
 import numpy
 from DoaMethods.functions import ReadRaw
-
+num_sources = 2
+num_meshes = 121
 DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
 
 raw, label = ReadRaw(config['data_path'])
-dataset = DoaMethods.MakeDataset(raw)
+dataset = DoaMethods.MakeDataset(raw, label)
 print(len(dataset))
 
 loader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), shuffle=False)
@@ -104,9 +105,14 @@ for idx in idxs:
 
         with plt.style.context(['science', 'ieee', 'grid']):
             plt.plot(output[idx].detach().numpy(), label=name)
-            for i in range(output.shape[1]):
-                if label[idx, i]:
-                    plt.axvline(x=i, color='red', linestyle='--')
+            # Find the non-zero index of the label[idx, :, 0]
+            true_angle = np.where(label[idx, :, :] != 0)[0]
+            for i in range(int(len(true_angle)/2)):
+                plt.axvline(x=true_angle[2*i]+0.5, color='red', linestyle='--')
+
+            # for i in range(output.shape[1]):
+            #     if label[idx, i]:
+            #         plt.axvline(x=i, color='red', linestyle='--')
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()
@@ -132,9 +138,9 @@ for idx in idxs:
         with plt.style.context(['science', 'ieee', 'grid']):
             plt.rcParams['font.family'] = 'Times New Roman'
             plt.plot(predict[idx].reshape(-1), label=name)
-            for i in range(predict.shape[1]):
-                if label[idx, i]:
-                    plt.axvline(x=i, color='red', linestyle='--')
+            true_angle = np.where(label[idx, :, :] != 0)[0]
+            for i in range(int(len(true_angle) / 2)):
+                plt.axvline(x=true_angle[2 * i] + 0.5, color='red', linestyle='--')
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()

@@ -10,7 +10,7 @@ if name in UnfoldingMethods or name in DataMethods:
         predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
                                           num_layers=config['num_layers'], device=config['device'])
     else:
-        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_30.pth",
                                           num_layers=config['num_layers'], device=config['device'])
     peak = TestCurve.find_peak(predict.detach().numpy())
 
@@ -38,7 +38,7 @@ elif mode == 'Snapshots':
     plt.xlabel('Snapshots')
 else:
     raise ValueError("Wrong mode!")
-plt.ylim(1e-1, 30)
+# plt.ylim(1e-1, 30)
 plt.ylabel('RMSE/$^{\circ}$')
 plt.yscale('log')
 plt.title(f"RMSE vs {mode}")
@@ -58,8 +58,8 @@ elif mode == 'Snapshots':
 else:
     raise ValueError("Wrong mode!")
 plt.ylabel('NMSE/dB')
-plt.title(f"NMSE vs {name}")
-plt.ylim(-45, -5)
+plt.title(f"NMSE vs {mode}")
+# plt.ylim(-45, -5)
 plt.legend(loc='upper right', prop={'size': 5})
 plt.grid(which='both', axis='both', linestyle='--', linewidth=0.1)
 plt.savefig(f"{config['figure_path']}/var{mode}_NMSE.pdf")

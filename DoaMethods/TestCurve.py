@@ -1,6 +1,6 @@
 import h5py
 import numpy as np
-from DoaMethods.functions import denoise_covariance, ReadModel, timer, find_peak
+from DoaMethods.functions import denoise_covariance, ReadModel, timer, find_peak, Spect2DoA
 from DoaMethods.configs import UnfoldingMethods, DataMethods, ModelMethods
 import DoaMethods
 import torch
@@ -41,12 +41,8 @@ class TestCurve:
                 if len(true_angle) == num_sources:
                     self.DOA_train[i, j] = np.where(self.label[i, j] != 0)[1] - (self.num_meshes - 1) / 2
                 elif len(true_angle) == num_sources*2:
-                    for s in range(num_sources):
-                        # calculate the true DoA by the left and right power
-                        left_index, rigth_index = true_angle[2*s], true_angle[2*s+1]
-                        left_value, right_value = self.label[s, j, 0, left_index], self.label[s, j, 0, rigth_index]
-                        truth_DOA = (left_index * left_value + rigth_index * right_value) / (left_value + right_value)
-                        self.DOA_train[i, j, s] = truth_DOA - (self.num_meshes - 1) / 2
+                    self.DOA_train[i, j] = Spect2DoA(self.label[i, j].reshape(1, self.num_meshes, 1), num_sources=num_sources, start_bias=int((num_meshes-1)/2)).reshape(-1)
+                    # a = 1
                 else:
                     raise ValueError("Wrong label!")
 
