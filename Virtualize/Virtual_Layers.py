@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from DoaMethods.configs import testSNR_interval, config_test_static
+from configs import testSNR_interval, config_test_static
 
 mode = "Layers"
 names = ["AMI-LF10", "AMI-10", "LISTA-LF10", "LISTA-10"]
 for name in names:
-    varSNR_dir = f"../Result/{name}/varLayers16.csv"
+    varSNR_dir = f"../Result/{name}/varLayers{testSNR_interval}.csv"
     varSNR = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[:, 0]
     if name == "AMI-LF10":
         RMSE_Ami = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[:, 1]
@@ -36,7 +36,7 @@ plt.plot(varSNR, RMSE_LISTA, label='LISTA')
 plt.xlabel('Layers')
 
 plt.ylabel('RMSE($^{\circ}$)')
-plt.ylim(1e-1, 30)
+# plt.ylim(1e-1, 30)
 plt.yscale('log')
 plt.title(f"RMSE vs {mode}")
 plt.legend(loc='upper right', prop={'size': 5})

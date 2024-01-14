@@ -124,9 +124,10 @@ for idx in idxs:
         # plt.rcParams['figure.dpi'] = 1000
             plt.rcParams['font.family'] = 'Times New Roman'
             plt.plot(output[idx].detach().numpy(), label=name)
-            for i in range(output.shape[1]):
-                if label[idx, i]:
-                    plt.axvline(x=i, color='red', linestyle='--')
+            true_angle = np.where(label[idx, :, :] != 0)[0]
+            for i in range(int(len(true_angle) / 2)):
+                plt.axvline(x=true_angle[2 * i] + 0.5, color='red', linestyle='--')
+
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()

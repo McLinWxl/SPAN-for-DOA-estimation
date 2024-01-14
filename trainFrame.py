@@ -38,11 +38,6 @@ for epoch in range(config['epoch']+1):
         data = data.to(config['device'])
         if name in UnfoldingMethods:
             output, layers_output = model(data)
-            # plt.plot(output[10].cpu().detach().numpy(), label='output')
-            # plt.plot(layers_output[10, 9].cpu().detach().numpy(), label='layers_output')
-            # plt.plot(label[10].cpu().detach().numpy(), label='label')
-            # plt.show()
-            # a=1
             if config['LF']:
                 for i in range(config['num_layers']):
                     mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32))) * (

@@ -14,16 +14,17 @@ varSNR_dir = f"{config['result_path']}/var{mode}{config['testSNR_interval']}.csv
 is_lr = True
 is_SNR = False
 start = 0
+end = 70
 if is_lr:
-    epoch = np.loadtxt(lr_dir, delimiter=',', skiprows=1)[start:, 0]
-    lr = np.loadtxt(lr_dir, delimiter=',', skiprows=1)[start:, 1] - start
-    loss_train = np.loadtxt(loss_dir, delimiter=',', skiprows=1)[start:, 1]
-    loss_valid = np.loadtxt(loss_dir, delimiter=',', skiprows=1)[start:, 2]
+    epoch = np.loadtxt(lr_dir, delimiter=',', skiprows=1)[start:end, 0]
+    lr = np.loadtxt(lr_dir, delimiter=',', skiprows=1)[start:end:, 1] - start
+    loss_train = np.loadtxt(loss_dir, delimiter=',', skiprows=1)[start:end:, 1]
+    loss_valid = np.loadtxt(loss_dir, delimiter=',', skiprows=1)[start:end:, 2]
 if is_SNR:
-    varSNR = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:, 0]
-    RMSE = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:, 1]
-    NMSE = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:, 2]
-    prob = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:, 3]
+    varSNR = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:end:, 0]
+    RMSE = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:end:, 1]
+    NMSE = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:end:, 2]
+    prob = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1)[start:end:, 3]
 
 if is_lr:
     plt.style.use(['science', 'ieee', 'grid'])
@@ -33,6 +34,7 @@ if is_lr:
     plt.ylabel('Loss')
     plt.title("Loss vs Epoch")
     plt.legend(loc='upper right', prop={'size': 5})
+    plt.savefig(f"{config['figure_path']}/loss.pdf")
     plt.show()
 
     plt.close()

@@ -10,13 +10,13 @@ name = 'AMI'
 is_LF = True
 num_layers = 10
 num_layers_test = 10
-is_checkpoint = False
+is_checkpoint = True
 ####################
-mode = 'SNR'  # SNR, Snapshots, Separation
-testSNR_interval = 26
+mode = 'Separation'  # SNR, Snapshots, Separation
+testSNR_interval = 10
 ####################
 batch_size = 128
-lr = 0.001
+lr = 0.0001
 epoch = 600
 is_scheduler = True
 warmup_epoch = 400
@@ -72,7 +72,7 @@ config_test_static = {
     'mode': mode, # SNR, Snapshots, Separation
     'testSNR_interval': testSNR_interval,
     'device': 'cpu',
-    'data_path': f'{abs_path}/DataSet/Data/TestData_var{mode}_{testSNR_interval}.h5' if mode == 'SNR' or mode == 'Snapshots' else f'{abs_path}/Dataset/Data/TestData_Separation_Ori.h5',
+    'data_path': f'{abs_path}/DataSet/Data/TestData_var{mode}_{testSNR_interval}.h5' if mode == 'SNR' or mode == 'Snapshots' else f'{abs_path}/Dataset/Data/TestData_varSeparation.h5',
     'model_path': f'{abs_path}/checkpoint/{name_test_SNR}.pth' if is_checkpoint else f'{abs_path}/Model/{name_test_SNR}/',
     'figure_path': f'{abs_path}/Figure/{name_test_SNR}/',
     'result_path': f'{abs_path}/Result/{name_test_SNR}/',

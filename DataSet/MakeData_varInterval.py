@@ -4,7 +4,6 @@ import os
 import numpy as np
 abs_path = os.path.abspath(os.path.dirname(__file__))
 
-interval = '6'
 
 configs = {
     'dataset_path': f'{abs_path}/Data/',
@@ -17,28 +16,24 @@ configs = {
     'num_snapshot': 256,
     }
 
+intervels = np.arange(2, 42, 2)
+DOAs = np.zeros((121, 2)) + 0.5
+for i in range(len(intervels)):
+    DOAs[i, 1] = 0.5 + intervels[i]
+
 Angles = np.arange(configs['Start'], configs['End'] + configs['Interval'], configs['Interval'])
 num_meshes = len(Angles)
 
-if interval == '26':
-    DOAs = np.array([
-         [-13.5, 12.5],
-         ])
-elif interval == '6':
-    DOAs = np.array([
-         [-3.5, 2.5],
-         ])
+RawData = np.zeros((len(intervels), configs['MC'], configs['num_sensor'], configs['num_snapshot']), dtype=np.complex64)
+Label = np.zeros((len(intervels), configs['MC'], num_meshes, 1), dtype=np.float32)
+for i in range(len(intervels)):
+    DoA_pairs = DOAs[i].reshape(1, 2)
+    DG = DataGenerator(DoA_pairs, is_train=False, snr_db=configs['SNR'], repeat=configs['MC'], num_snapshot=configs['num_snapshot'])
+    raw_data, label = DG.get_raw_label()
+    RawData[i] = raw_data
+    Label[i] = label
 
-num_snapshots = np.arange(10, 400, 10)
-max_snapshot = np.max(num_snapshots)
-RawData = np.zeros((len(num_snapshots), len(DOAs) * configs['MC'], configs['num_sensor'], max_snapshot), dtype=np.complex64)
-Label = np.zeros((len(num_snapshots), len(DOAs) * configs['MC'], num_meshes, 1), dtype=np.float32)
-for i in range(len(num_snapshots)):
-    DG = DataGenerator(DOAs, is_train=False, snr_db=configs['SNR'], repeat=configs['MC'], num_snapshot=num_snapshots[i])
-    raw_data, Label[i] = DG.get_raw_label()
-    RawData[i, :, :, :num_snapshots[i]] = raw_data
-
-with h5py.File(f'{configs["dataset_path"]}TestData_varInterval.h5', 'w') as f:
+with h5py.File(f'{configs["dataset_path"]}TestData_varSeparation.h5', 'w') as f:
     f.create_dataset('RawData', data=RawData)
     f.create_dataset('LabelPower', data=Label)
 

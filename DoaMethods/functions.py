@@ -18,6 +18,7 @@ def Spect2DoA(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
     angles = np.zeros((num_samples, num_sources))
     for num in range(num_samples):
         li_0 = Spectrum[num, :].reshape(-1)
+        li_0[li_0 < 0] = 0
         li = np.sqrt(li_0)
         angle = np.zeros(num_sources) - 5
         peaks_idx = np.zeros(num_sources)

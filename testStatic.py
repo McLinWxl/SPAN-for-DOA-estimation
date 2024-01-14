@@ -10,7 +10,7 @@ if name in UnfoldingMethods or name in DataMethods:
         predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
                                           num_layers=config['num_layers'], device=config['device'])
     else:
-        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_30.pth",
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_140.pth",
                                           num_layers=config['num_layers'], device=config['device'])
     peak = TestCurve.find_peak(predict.detach().numpy())
 
@@ -25,9 +25,9 @@ plt.style.use(['science', 'ieee', 'grid'])
 if mode == 'SNR':
     x_tricks = [i for i in range(-12, 13, 1)]
 elif mode == 'Separation':
-    x_tricks = [i for i in range(2, 21, 1)]
+    x_tricks = [i for i in range(2, 42, 2)]
 elif mode == 'Snapshots':
-    x_tricks = [i for i in range(10, 410, 10)]
+    x_tricks = [i for i in range(10, 410, 20)]
 
 plt.plot(x_tricks, RMSE, label=name)
 if mode == 'SNR':
@@ -66,10 +66,16 @@ plt.savefig(f"{config['figure_path']}/var{mode}_NMSE.pdf")
 plt.show()
 plt.close()
 
-with open(f"{config['result_path']}/var{mode}{config['testSNR_interval']}.csv", 'w') as f:
-    f.write("SNR, RMSE, NMSE, prob\n")
-    for i in range(len(x_tricks)):
-        f.write(f"{x_tricks[i]}, {RMSE[i]}, {NMSE[i]}, {prob[i]}\n")
+if mode == 'SNR' or mode == 'Snapshots':
+    with open(f"{config['result_path']}/var{mode}{config['testSNR_interval']}.csv", 'w') as f:
+        f.write("SNR, RMSE, NMSE, prob\n")
+        for i in range(len(x_tricks)):
+            f.write(f"{x_tricks[i]}, {RMSE[i]}, {NMSE[i]}, {prob[i]}\n")
+elif mode == 'Separation':
+    with open(f"{config['result_path']}/var{mode}.csv", 'w') as f:
+        f.write("Separation, RMSE, NMSE, prob\n")
+        for i in range(len(x_tricks)):
+            f.write(f"{x_tricks[i]}, {RMSE[i]}, {NMSE[i]}, {prob[i]}\n")
 
 
 

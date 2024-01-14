@@ -1,12 +1,12 @@
 import DoaMethods
-from DoaMethods.configs import config_test_static as config
-from DoaMethods.configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMethods
+from configs import config_test_static as config
+from configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMethods, testSNR_interval
 import matplotlib.pyplot as plt
 
 
 mode = 'Layers'
-TestCurve = DoaMethods.TestCurve(dir_test='Dataset_old/Data/TestData_varLayers.h5')
-assert is_checkpoint
+TestCurve = DoaMethods.TestCurve(dir_test=f'./DataSet/Data/TestData_varLayers_{testSNR_interval}.h5')
+assert name in UnfoldingMethods, "Wrong name!"
 predict, predict_all = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
 
                                   num_layers=config['num_layers'], device=config['device'])
