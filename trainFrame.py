@@ -17,7 +17,7 @@ val_loader = torch.utils.data.DataLoader(valid_set, batch_size=config['batch_siz
 
 dictionary = torch.from_numpy(dataset.dictionary)
 
-model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).get_model()
+model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device'], is_train=True).get_model()
 loss = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'])
 

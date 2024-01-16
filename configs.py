@@ -1,27 +1,27 @@
 import os
 abs_path = os.path.abspath(os.path.dirname(__file__))
 # abs_path = os.path.dirname(abs_path)
-name = 'AMI'
-# LISTA, CPSS, AMI,
+name = 'ALISTA'
+# LISTA, CPSS, AMI, ALISTA
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
 ###################
 # For LISTA, CPSS, AMI
-is_LF = True
-num_layers = 10
-num_layers_test = 10
-is_checkpoint = True
+is_LF = False
+num_layers = 20
+num_layers_test = 20
+is_checkpoint = False
 ####################
-mode = 'Separation'  # SNR, Snapshots, Separation
-testSNR_interval = 10
+mode = 'SNR'  # SNR, Snapshots, Separation
+testSNR_interval = 35
 ####################
 batch_size = 128
-lr = 0.0001
+lr = 0.001
 epoch = 600
 is_scheduler = True
 warmup_epoch = 400
 ####################
-UnfoldingMethods= ['LISTA', 'CPSS', 'AMI']
+UnfoldingMethods= ['LISTA', 'CPSS', 'AMI', 'ALISTA']
 DataMethods = ['DCNN']
 ModelMethods = ['MUSIC', 'MVDR', 'SBL', 'ISTA']
 ####################

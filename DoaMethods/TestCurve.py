@@ -1,13 +1,15 @@
 import h5py
 import numpy as np
 from DoaMethods.functions import denoise_covariance, ReadModel, timer, find_peak, Spect2DoA
-from DoaMethods.configs import UnfoldingMethods, DataMethods, ModelMethods
+from configs import name, UnfoldingMethods, DataMethods, ModelMethods
 import DoaMethods
 import torch
 from rich.progress import track
 import matplotlib.pyplot as plt
 import itertools
 from DoaMethods.MakeDataset import MakeDataset
+
+DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
 
 
 class TestCurve:
@@ -58,7 +60,7 @@ class TestCurve:
         prediction_layers = torch.zeros((self.num_lists, self.samples, self.num_layers, self.num_meshes, 1))
         with torch.no_grad():
             if name in UnfoldingMethods:
-                for list_idx in track(range(self.num_lists), description="Ada-LISTA"):
+                for list_idx in track(range(self.num_lists), description="Ufolding"):
                     for idx in range(self.samples):
                         cor_array_item = torch.unsqueeze(torch.from_numpy(self.covariance_vector[list_idx, idx]), dim=0)
                         prediction[list_idx, idx], prediction_layers[list_idx, idx] = model(cor_array_item)
@@ -99,6 +101,7 @@ class TestCurve:
         num_lists, num_id, _, _ = predict.shape
         peak = np.zeros((num_lists, num_id, 2))
         for list_idx, idx in itertools.product(range(num_lists), range(num_id)):
+            aps = predict[list_idx, idx]
             peak[list_idx, idx] = find_peak(predict[list_idx, idx].reshape(1, self.num_meshes, 1), num_sources=2).reshape(
                 -1)
         return peak

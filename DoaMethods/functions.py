@@ -85,12 +85,16 @@ def ReadRaw(path):
 
 
 class ReadModel:
-    def __init__(self, name, dictionary, num_layers, device='cpu'):
+    def __init__(self, name, dictionary, num_layers, device='cpu', **kwargs):
+        is_train = kwargs.get('is_train', False)
         if name == 'LISTA':
             model = (DoaMethods.UnfoldingMethods.LISTA(dictionary=dictionary, num_layers=num_layers)
                      .to(device))
         elif name == 'AMI':
             model = (DoaMethods.UnfoldingMethods.AMI_LISTA(dictionary=dictionary, num_layers=num_layers)
+                     .to(device))
+        elif name == 'ALISTA':
+            model = (DoaMethods.UnfoldingMethods.ALISTA(dictionary=dictionary, num_layers=num_layers, is_train=is_train)
                      .to(device))
         elif name == 'CPSS':
             model = (DoaMethods.UnfoldingMethods.CPSS_LISTA(dictionary=dictionary, num_layers=num_layers)
@@ -130,10 +134,17 @@ def denoise_covariance(covariance_matrix, num_sources=2):
 
 
 def soft_threshold(x, theta):
-    return x.sgn() * torch.nn.functional.relu(x.abs() - theta)
+    return x.sgn() * torch.nn.functional.leaky_relu(x.abs() - theta)
 
 
 def support_selection(x, theta, p):
+    """
+
+    :param x:
+    :param theta: Threshold
+    :param p: Possibility of the support
+    :return:
+    """
     x_abs = x.abs()
     threshold = torch.quantile(x_abs, 1 - p, dim=1, keepdims=True)
     if isinstance(p, torch.Tensor) and p.numel() > 1:

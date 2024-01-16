@@ -4,14 +4,17 @@ from configs import name, is_checkpoint, ModelMethods, DataMethods, UnfoldingMet
 import matplotlib.pyplot as plt
 mode = config['mode']
 
+DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
+
 TestCurve = DoaMethods.TestCurve(dir_test=config['data_path'])
 if name in UnfoldingMethods or name in DataMethods:
     if is_checkpoint:
         predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
                                           num_layers=config['num_layers'], device=config['device'])
     else:
-        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_140.pth",
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
                                           num_layers=config['num_layers'], device=config['device'])
+    predi = predict[0, 0, :, 0]
     peak = TestCurve.find_peak(predict.detach().numpy())
 
 elif name in ModelMethods:

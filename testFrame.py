@@ -24,7 +24,16 @@ if name in UnfoldingMethods or name in DataMethods:
     if is_checkpoint:
         model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}")
     else:
-        model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/best.pth")
+        model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/model_40.pth")
+
+    # W1 = model.W
+    # Res = W1 - dictionary
+    # Res = Res.real
+    # plt.matshow(Res.detach().numpy())
+    # plt.show()
+    print(f"Step Size: {model.gamma}")
+    print(f"Threshold: {model.theta}")
+    print(f"Theta/gamma: {model.theta/model.gamma}")
 
     model.eval()
     mse_val_last = 0
@@ -70,7 +79,7 @@ elif name in ModelMethods:
         raise ValueError("Wrong name!")
 
 
-idxs = [0, 1, 2, 3, 4]
+idxs = [0, 1, 2, 3, 4, 5, 6]
 for idx in idxs:
     if name in UnfoldingMethods:
         plt.rcParams['font.family'] = 'Times New Roman'
