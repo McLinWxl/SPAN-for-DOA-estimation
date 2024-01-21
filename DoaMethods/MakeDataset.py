@@ -61,8 +61,7 @@ class MakeDataset(torch.utils.data.Dataset):
 
     def cal_covariance_matrix_denoised(self):
         covariance_matrix = denoise_covariance(self.cal_covariance_matrix_clean())
-        # Normalize the covariance matrix up to 1
-        covariance_matrix_norm = covariance_matrix / numpy.max(numpy.abs(covariance_matrix), axis=(1, 2), keepdims=True)
+        covariance_matrix_norm = covariance_matrix
         return covariance_matrix_norm
 
     def cal_covariance_vector(self):

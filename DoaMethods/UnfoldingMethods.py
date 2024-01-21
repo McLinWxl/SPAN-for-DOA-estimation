@@ -34,6 +34,7 @@ class LISTA(torch.nn.Module):
     def forward(self, covariance_vector, device="cpu"):
         dictionary = self.dictionary.to(torch.complex64)
         covariance_vector = covariance_vector.reshape(-1, self.num_sensors_2p, 1).to(torch.complex64).to(self.device)
+        covariance_vector = covariance_vector / torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
         batchSize = covariance_vector.shape[0]
         x_eta = torch.matmul(dictionary.conj().T, covariance_vector).real.float()
         # x_eta /= torch.norm(x_eta, dim=1, keepdim=True)
@@ -93,6 +94,7 @@ class AMI_LISTA(torch.nn.Module):
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
         covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
+        covariance_vector = covariance_vector / torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector).real.float()
         # x0 /= torch.norm(x0, dim=1, keepdim=True)
@@ -162,6 +164,7 @@ class CPSS_LISTA(torch.nn.Module):
 
     def forward(self, covariance_array):
         covariance_array = covariance_array.to(torch.complex64)
+        covariance_array = covariance_array / torch.linalg.matrix_norm(covariance_array, ord=np.inf, keepdim=True)
         eta = torch.real(torch.matmul(self.dictionary.transpose(1, 0).conj(), covariance_array))
         # eta /= torch.norm(eta, dim=1, keepdim=True)
         eta_layers = torch.zeros(covariance_array.shape[0], self.num_layers, self.num_meshes, 1).to(self.device)
@@ -196,9 +199,10 @@ class ALISTA(torch.nn.Module):
         M2 = self.num_sensors ** 2
         self.num_meshes = dictionary.shape[1]
         self.M2 = M2
+        self.covariance_norm = kwargs.get('covariance_norm', 1)
         self.num_layers = kwargs.get('num_layers', 10)
         self.device = kwargs.get('device', 'cpu')
-        self.is_SS = kwargs.get('SS', False)
+        self.is_SS = kwargs.get('SS', True)
         if self.is_SS:
             self.p_selection = kwargs.get('p_selection', 1.2)
             self.p_max = kwargs.get('p_max', 9)
@@ -207,6 +211,7 @@ class ALISTA(torch.nn.Module):
         self.dic_norm = torch.mean(torch.norm(dictionary, dim=0, keepdim=True))
         dictionary = dictionary / self.dic_norm
         self.dictionary = dictionary
+        # calculate the step size
         self.stepsize_init = 1 / (2 * torch.linalg.eigvals(torch.matmul(dictionary, dictionary.conj().T)).real.max())
         print(f"Step Size Init: {self.stepsize_init}")
 
@@ -220,8 +225,8 @@ class ALISTA(torch.nn.Module):
         ite, epsilon = 0, 1
         if self.is_train:
             W, W_before = dictionary, torch.zeros_like(dictionary)
-            while epsilon > 0.001 and ite < 1000000:
-                W, norm = self.PGD(W, 0.001)
+            while epsilon > 0.001 and ite < 1000:
+                W, norm = self.PGD(W, self.stepsize_init)
                 epsilon = torch.norm(W_before - W)
                 W_before = W
                 ite += 1
@@ -245,16 +250,18 @@ class ALISTA(torch.nn.Module):
             W_dec = 1 - torch.matmul(D[:, i].reshape(self.M2, 1).conj().T, Wt[:, i].reshape(self.M2, 1))
             Weight_column = W_dec * Wt[:, i].reshape(self.M2, 1)
             aps += torch.matmul(D[:, i].reshape(self.M2, 1).conj().T, Wt[:, i].reshape(self.M2, 1))
-            W_delta[:, i] = Weight_column.reshape(-1)
+            W_delta[:, i] = Weight_column.reshape(self.M2)
         W_step = Wt + W_delta
         return W_step, aps / Wt.shape[1]
 
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
         covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
+        self.covariance_norm = torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
+        covariance_vector = covariance_vector / self.covariance_norm
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector)
-        x0 = x0 * self.dic_norm / torch.norm(covariance_vector, dim=1, keepdim=True)
+        x0 = x0 * self.dic_norm / self.covariance_norm
         x_real = x0.real.float()
         x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
         for layer in range(self.num_layers):
@@ -273,6 +280,6 @@ class ALISTA(torch.nn.Module):
                 #     x_real = self.relu(x_abs - self.theta[layer])
                 x_real = self.relu(x_abs - torch.abs(self.theta[layer]))
             x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
-            x_real = x_real * self.dic_norm / torch.mean(torch.norm(covariance_vector, dim=1, keepdim=True) + 1e-20)
+            x_real = x_real * self.dic_norm / self.covariance_norm
             x_layers_virtual[:, layer] = x_real
         return x_real, x_layers_virtual

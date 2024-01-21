@@ -8,8 +8,8 @@ name = 'ALISTA'
 ###################
 # For LISTA, CPSS, AMI
 is_LF = False
-num_layers = 20
-num_layers_test = 20
+num_layers = 10
+num_layers_test = 10
 is_checkpoint = False
 ####################
 mode = 'SNR'  # SNR, Snapshots, Separation

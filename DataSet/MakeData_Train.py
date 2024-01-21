@@ -28,9 +28,9 @@ DOAs = np.vstack([DOA11, DOA22]).T
 DG = DataGenerator(DOAs, is_train=True, repeat=30)
 RawData, Label = DG.get_raw_label()
 
-with h5py.File(f'{configs["dataset_path"]}TrainData.h5', 'w') as f:
-    f.create_dataset('RawData', data=RawData)
-    f.create_dataset('LabelPower', data=Label)
+# with h5py.File(f'{configs["dataset_path"]}TrainData.h5', 'w') as f:
+#     f.create_dataset('RawData', data=RawData)
+#     f.create_dataset('LabelPower', data=Label)
 
 
 
