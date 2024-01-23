@@ -150,8 +150,8 @@ class CPSS_LISTA(torch.nn.Module):
         self.is_SS = kwargs.get('SS', True)
         self.is_CP = kwargs.get('CP', True)
         self.num_layers = kwargs.get('num_layers', 10)
-        self.p_selection = kwargs.get('p_selection', 1.2)
-        self.p_max = kwargs.get('p_max', 9)
+        self.p_selection = kwargs.get('p_selection', 3.31)
+        self.p_max = kwargs.get('p_max', 3.31)
         self.device = kwargs.get('device', torch.device('cpu'))
         self.dictionary = dictionary.to(torch.complex64)
 
@@ -204,28 +204,28 @@ class ALISTA(torch.nn.Module):
         self.device = kwargs.get('device', 'cpu')
         self.is_SS = kwargs.get('SS', True)
         if self.is_SS:
-            self.p_selection = kwargs.get('p_selection', 1.2)
-            self.p_max = kwargs.get('p_max', 9)
+            self.p_selection = kwargs.get('p_selection', 1.66)
+            self.p_max = kwargs.get('p_max', 6)
         self.is_train = kwargs.get('is_train', False)
         # calculate the F-norm of dictionary matrix (64, 121)
         self.dic_norm = torch.mean(torch.norm(dictionary, dim=0, keepdim=True))
         dictionary = dictionary / self.dic_norm
         self.dictionary = dictionary
+
         # calculate the step size
-        self.stepsize_init = 1 / (2 * torch.linalg.eigvals(torch.matmul(dictionary, dictionary.conj().T)).real.max())
+        self.stepsize_init = 1 / (5 * torch.linalg.eigvals(torch.matmul(dictionary.conj().T, dictionary)).real.max())
         print(f"Step Size Init: {self.stepsize_init}")
 
         # Trainable Parameters
         self.gamma = torch.nn.Parameter(self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
         self.theta = torch.nn.Parameter(0.1 * self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
 
-        self.leakly_relu = torch.nn.LeakyReLU()
         self.relu = torch.nn.ReLU()
 
         ite, epsilon = 0, 1
         if self.is_train:
             W, W_before = dictionary, torch.zeros_like(dictionary)
-            while epsilon > 0.001 and ite < 1000:
+            while epsilon > 0.001 and ite < 5000:
                 W, norm = self.PGD(W, self.stepsize_init)
                 epsilon = torch.norm(W_before - W)
                 W_before = W

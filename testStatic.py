@@ -14,7 +14,6 @@ if name in UnfoldingMethods or name in DataMethods:
     else:
         predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
                                           num_layers=config['num_layers'], device=config['device'])
-    predi = predict[0, 0, :, 0]
     peak = TestCurve.find_peak(predict.detach().numpy())
 
 elif name in ModelMethods:
@@ -25,23 +24,12 @@ else:
 _, RMSE, NMSE, prob = TestCurve.calculate_error(peak)
 
 plt.style.use(['science', 'ieee', 'grid'])
-if mode == 'SNR':
-    x_tricks = [i for i in range(-12, 13, 1)]
-elif mode == 'Separation':
-    x_tricks = [i for i in range(2, 42, 2)]
-elif mode == 'Snapshots':
-    x_tricks = [i for i in range(10, 410, 20)]
+mode_ranges = {'SNR': range(-12, 13, 1), 'Separation': range(2, 42, 2), 'Snapshots': range(10, 410, 20)}
+x_tricks = [i for i in mode_ranges[mode]]
 
+mode_labels = {'SNR': 'SNR/dB', 'Separation': 'Angle Separation/$^{\circ}$', 'Snapshots': 'Snapshots'}
 plt.plot(x_tricks, RMSE, label=name)
-if mode == 'SNR':
-    plt.xlabel('SNR/dB')
-elif mode == 'Separation':
-    plt.xlabel('Angle Separation/$^{\circ}$')
-elif mode == 'Snapshots':
-    plt.xlabel('Snapshots')
-else:
-    raise ValueError("Wrong mode!")
-# plt.ylim(1e-1, 30)
+plt.xlabel(mode_labels.get(mode, ValueError("Wrong mode!")))
 plt.ylabel('RMSE/$^{\circ}$')
 plt.yscale('log')
 plt.title(f"RMSE vs {mode}")
@@ -51,18 +39,11 @@ plt.savefig(f"{config['figure_path']}/var{mode}_RMSE.pdf")
 plt.show()
 plt.close()
 
+mode_labels = {'SNR': 'SNR/dB', 'Separation': 'Angle Separation/$^{\circ}$', 'Snapshots': 'Snapshots'}
 plt.plot(x_tricks, NMSE, label=name)
-if mode == 'SNR':
-    plt.xlabel('SNR/dB')
-elif mode == 'Separation':
-    plt.xlabel('Angle Separation/$^{\circ}$')
-elif mode == 'Snapshots':
-    plt.xlabel('Snapshots')
-else:
-    raise ValueError("Wrong mode!")
+plt.xlabel(mode_labels.get(mode, ValueError("Wrong mode!")))
 plt.ylabel('NMSE/dB')
 plt.title(f"NMSE vs {mode}")
-# plt.ylim(-45, -5)
 plt.legend(loc='upper right', prop={'size': 5})
 plt.grid(which='both', axis='both', linestyle='--', linewidth=0.1)
 plt.savefig(f"{config['figure_path']}/var{mode}_NMSE.pdf")

@@ -104,7 +104,12 @@ class ReadModel:
         else:
             raise ValueError("No such model")
         self.model = model
-        print(f"{name} Total number of parameters : {sum(p.numel() for p in model.parameters())}")
+        # Print trainable parameters
+        num_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"{name} Total number of trainable parameters : {num_trainable_params}")
+
+
+        # print(f"{name} Total number of parameters : {sum(p.numel() for p in model.parameters())}")
 
     def get_model(self):
         return self.model

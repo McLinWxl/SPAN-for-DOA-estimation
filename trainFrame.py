@@ -49,6 +49,11 @@ for epoch in range(config['epoch']+1):
             mse_loss = loss(output.to(torch.float32), label.to(torch.float32))
         mse_loss.backward()
         optimizer.step()
+        # make the gamma and theta positive
+        if name == 'ALISTA':
+            model.gamma.data = torch.abs(model.gamma.data)
+            model.theta.data = torch.abs(model.theta.data)
+
         optimizer.zero_grad()
         mse_train_last += mse_loss.item()
         # if iii == 0:
