@@ -49,7 +49,8 @@ if is_ablition:
     plot_graph(data, plot_config, names, mode, 'NMSE', 'NMSE')
     plot_graph(data, plot_config, names, mode, 'prob', 'accuracy')
 else:
-    names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN", "ALISTA-10", "ALISTA-20"]
+    #     names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN", "ALISTA-10"]
+    names = ["LISTA-10", "MUSIC", "MVDR", "ALISTA-10"]
     plot_config = {
         "AMI-LF10": {"label": 'AMI-LISTA'},
         "LISTA-10": {"label": 'LISTA'},

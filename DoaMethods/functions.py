@@ -41,6 +41,31 @@ def Spect2DoA(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
         angles[num] = angle.reshape(-1)
     return np.sort(angles, axis=1)[::-1]
 
+
+def Spect2DoA_no_insert(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
+    """
+    :param Spectrum: (num_samples, num_meshes, 1)
+    :param num_sources:
+    :param height_ignore:
+    :param start_bias:
+    :return: (num_samples, num_sources)
+    """
+    num_samples, num_meshes, _ = Spectrum.shape
+    angles = np.zeros((num_samples, num_sources))
+    grids_mesh = np.arange(num_meshes) - start_bias
+    for num in range(num_samples):
+        li_0 = Spectrum[num, :].reshape(-1)
+        li_0[li_0 < 0] = 0
+        li = np.sqrt(li_0)
+        angle = np.zeros(num_sources) - 5
+        peaks, _ = scipy.signal.find_peaks(li, height=height_ignore)
+        max_spectrum = heapq.nlargest(num_sources, li[peaks])
+        for i in range(len(max_spectrum)):
+            angle[i] = grids_mesh[np.where(li == max_spectrum[i])[0][0]]
+        angles[num] = angle.reshape(-1)
+    return np.sort(angles, axis=1)[::-1]
+
+
 def DoA2Spect(DoA, num_meshes=121, num_sources=2, start_bias=60):
     """
     :param DoA: (num_samples, num_sources)
@@ -139,12 +164,11 @@ def denoise_covariance(covariance_matrix, num_sources=2):
 
 
 def soft_threshold(x, theta):
-    return x.sgn() * torch.nn.functional.leaky_relu(x.abs() - theta)
+    return x.sgn() * torch.nn.functional.relu(x.abs() - theta)
 
 
 def support_selection(x, theta, p):
     """
-
     :param x:
     :param theta: Threshold
     :param p: Possibility of the support
@@ -152,10 +176,9 @@ def support_selection(x, theta, p):
     """
     x_abs = x.abs()
     threshold = torch.quantile(x_abs, 1 - p, dim=1, keepdims=True)
-    if isinstance(p, torch.Tensor) and p.numel() > 1:
-        threshold = torch.stack([threshold[i, i, 0] for i in range(p.numel())]).unsqueeze(1)
-    bypass = torch.logical_and(x_abs >= threshold, x_abs >= theta).detach()
-    output = torch.where(bypass, x, soft_threshold(x, theta))
+    bypass = torch.logical_and(torch.ge(x_abs, threshold), torch.ge(x_abs, theta))
+    output = torch.where(bypass, x_abs, soft_threshold(x_abs, theta))
+    a = 1
     return output
 
 

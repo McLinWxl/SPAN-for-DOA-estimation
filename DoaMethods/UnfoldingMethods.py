@@ -204,12 +204,9 @@ class ALISTA(torch.nn.Module):
         self.device = kwargs.get('device', 'cpu')
         self.is_SS = kwargs.get('SS', True)
         if self.is_SS:
-            self.p_selection = kwargs.get('p_selection', 1.66)
-            self.p_max = kwargs.get('p_max', 6)
+            self.p_para = 0.031 * torch.ones(self.num_layers)
         self.is_train = kwargs.get('is_train', False)
         # calculate the F-norm of dictionary matrix (64, 121)
-        self.dic_norm = torch.mean(torch.norm(dictionary, dim=0, keepdim=True))
-        dictionary = dictionary / self.dic_norm
         self.dictionary = dictionary
 
         # calculate the step size
@@ -219,18 +216,17 @@ class ALISTA(torch.nn.Module):
         # Trainable Parameters
         self.gamma = torch.nn.Parameter(self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
         self.theta = torch.nn.Parameter(0.1 * self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
-
         self.relu = torch.nn.ReLU()
 
         ite, epsilon = 0, 1
         if self.is_train:
             W, W_before = dictionary, torch.zeros_like(dictionary)
-            while epsilon > 0.001 and ite < 5000:
-                W, norm = self.PGD(W, self.stepsize_init)
+            while epsilon > 0.00001 and ite < 10000:
+                W = self.PGD(W, self.stepsize_init)
                 epsilon = torch.norm(W_before - W)
                 W_before = W
                 ite += 1
-                print(ite, epsilon, norm)
+                print(ite, epsilon)
         else:
             W = torch.zeros_like(dictionary)
         self.W = torch.nn.Parameter(W, requires_grad=False)
@@ -242,17 +238,13 @@ class ALISTA(torch.nn.Module):
         :param gamma: Step size
         """
         D = self.dictionary.to(torch.complex64)
-        Wt = W - gamma * torch.matmul(torch.matmul(D, D.conj().T), W)
+        I = torch.eye(self.num_meshes) + 1j * torch.zeros([self.num_meshes, self.num_meshes])
         # Apply Projection
-        W_delta = torch.zeros_like(Wt)
-        aps = 0
-        for i in range(Wt.shape[1]):
-            W_dec = 1 - torch.matmul(D[:, i].reshape(self.M2, 1).conj().T, Wt[:, i].reshape(self.M2, 1))
-            Weight_column = W_dec * Wt[:, i].reshape(self.M2, 1)
-            aps += torch.matmul(D[:, i].reshape(self.M2, 1).conj().T, Wt[:, i].reshape(self.M2, 1))
-            W_delta[:, i] = Weight_column.reshape(self.M2)
-        W_step = Wt + W_delta
-        return W_step, aps / Wt.shape[1]
+        part1 = torch.matmul(D.conj().T, W) - I
+        part2 = torch.matmul(D, part1)
+        W = W - gamma * part2
+        return W
+
 
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
@@ -261,18 +253,17 @@ class ALISTA(torch.nn.Module):
         covariance_vector = covariance_vector / self.covariance_norm
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector)
-        x0 = x0 * self.dic_norm / self.covariance_norm
+        x0 = x0 / self.covariance_norm
         x_real = x0.real.float()
         x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
         for layer in range(self.num_layers):
             p1 = torch.matmul(dictionary, x_real + 1j * torch.zeros_like(x_real)) - covariance_vector
-            p2 = torch.abs(self.gamma[layer]) * torch.matmul(self.W.conj().T, p1)
+            p2 = self.gamma[layer] * torch.matmul(self.W.conj().T, p1)
             p3 = x_real - p2
             x_abs = torch.abs(p3)
             if self.is_SS:
-                p = torch.min(torch.tensor([self.p_selection * (layer + 1), self.p_max]))
-                p = (p / 100).to(self.device)
-                x_real = support_selection(x_abs, self.theta[layer], p)
+                x_real = support_selection(x_abs, self.theta[layer], self.p_para[layer])
+                a = 1
             else:
                 # if layer < self.num_layers - 1:
                 #     x_real = self.leakly_relu(x_abs - self.theta[layer])
@@ -280,6 +271,87 @@ class ALISTA(torch.nn.Module):
                 #     x_real = self.relu(x_abs - self.theta[layer])
                 x_real = self.relu(x_abs - torch.abs(self.theta[layer]))
             x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
-            x_real = x_real * self.dic_norm / self.covariance_norm
+            x_real = x_real / self.covariance_norm
+            x_layers_virtual[:, layer] = x_real
+        return x_real, x_layers_virtual
+
+
+class ALISTA_DU(torch.nn.Module):
+    def __init__(self, dictionary, **kwargs):
+        """
+        :param dictionary **required**
+        :param num_layers: 10
+        :param device: 'cpu'
+        """
+        super(ALISTA, self).__init__()
+        self.num_sensors = int(np.sqrt(dictionary.shape[0]))
+        M2 = self.num_sensors ** 2
+        self.num_meshes = dictionary.shape[1]
+        self.M2 = M2
+        self.covariance_norm = kwargs.get('covariance_norm', 1)
+        self.num_layers = kwargs.get('num_layers', 10)
+        self.device = kwargs.get('device', 'cpu')
+        self.is_SS = kwargs.get('SS', True)
+        self.PGD_layers = kwargs.get('PGD_layers', 10)
+        if self.is_SS:
+            self.p_para = torch.nn.Parameter(5 * torch.ones(self.num_layers), requires_grad=True)
+        self.is_train = kwargs.get('is_train', False)
+        self.dictionary = dictionary
+        # calculate the step size
+        stepsize_init = 1 / (5 * torch.linalg.eigvals(torch.matmul(dictionary.conj().T, dictionary)).real.max())
+        print(f"Step Size Init: {stepsize_init}")
+        # Trainable Parameters
+        self.stepsize_PGD = torch.nn.Parameter(stepsize_init, requires_grad=True)
+        self.weight_PGD = torch.nn.Parameter(torch.eye(self.num_meshes) + 1j * torch.zeros([self.num_meshes, self.num_meshes]), requires_grad=True)
+        # self.penalty = torch.nn.Parameter(torch.ones(self.num_meshes, self.num_meshes) + torch.eye(self.num_meshes), requires_grad=False)
+
+        self.gamma = torch.nn.Parameter(stepsize_init * torch.ones(self.num_layers), requires_grad=True)
+        self.theta = torch.nn.Parameter(0.1 * stepsize_init * torch.ones(self.num_layers), requires_grad=True)
+        self.relu = torch.nn.ReLU()
+
+    def PGD(self, weight_PGD, gamma, PGD_layers=10):
+        """
+        Projection Gradient Descent
+        :param penalty: penalty weight
+        :param gamma: Step size
+        :param PGD_layers: Number of layers
+        """
+        D = self.dictionary.to(torch.complex64)
+        W = D
+        D_weighted = torch.matmul(D, weight_PGD)
+        I = torch.eye(self.num_meshes) + 1j * torch.zeros([self.num_meshes, self.num_meshes])
+        # penalty_ = torch.mul(penalty, penalty)
+        for i in range(PGD_layers):
+            part1 = torch.matmul(D_weighted.conj().T, W) - I
+            part2 = gamma * torch.matmul(D_weighted, part1)
+            W = W - part2
+        return W
+
+    def forward(self, covariance_vector: torch.Tensor):
+        W = self.PGD(self.weight_PGD, self.stepsize_PGD, PGD_layers=self.PGD_layers)
+        dictionary = self.dictionary.to(torch.complex64)
+        covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
+        self.covariance_norm = torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
+        covariance_vector = covariance_vector / self.covariance_norm
+        batch_size = covariance_vector.shape[0]
+        x0 = torch.matmul(dictionary.conj().T, covariance_vector)
+        x0 = x0 / self.covariance_norm
+        x_real = x0.real.float()
+        x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
+        for layer in range(self.num_layers):
+            p1 = torch.matmul(dictionary, x_real + 1j * torch.zeros_like(x_real)) - covariance_vector
+            p2 = self.gamma[layer] * torch.matmul(W.conj().T, p1)
+            p3 = x_real - p2
+            x_abs = torch.abs(p3)
+            if self.is_SS:
+                x_real = support_selection(x_abs, self.theta[layer], self.p_para[layer]/100)
+            else:
+                # if layer < self.num_layers - 1:
+                #     x_real = self.leakly_relu(x_abs - self.theta[layer])
+                # else:
+                #     x_real = self.relu(x_abs - self.theta[layer])
+                x_real = self.relu(x_abs - torch.abs(self.theta[layer]))
+            x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
+            x_real = x_real / self.covariance_norm
             x_layers_virtual[:, layer] = x_real
         return x_real, x_layers_virtual

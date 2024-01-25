@@ -24,7 +24,7 @@ if name in UnfoldingMethods or name in DataMethods:
     if is_checkpoint:
         model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}")
     else:
-        model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/best.pth")
+        model = DoaMethods.functions.ReadModel(name=name, dictionary=dictionary, num_layers=config['num_layers'], device=config['device']).load_model(f"{config['model_path']}/model_200.pth")
 
     # W1 = model.W
     # Res = W1 - dictionary
@@ -34,6 +34,9 @@ if name in UnfoldingMethods or name in DataMethods:
     print(f"Step Size: {model.gamma}")
     print(f"Threshold: {model.theta}")
     print(f"Theta/gamma: {model.theta/model.gamma}")
+    print(f"CPSS: {model.p_para}")
+    # print(f"Strp Size PGD: {model.stepsize_PGD}")
+
 
     model.eval()
     mse_val_last = 0

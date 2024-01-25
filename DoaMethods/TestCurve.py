@@ -1,15 +1,17 @@
+import itertools
+
 import h5py
 import numpy as np
-from DoaMethods.functions import denoise_covariance, ReadModel, timer, find_peak, Spect2DoA
-from configs import name, UnfoldingMethods, DataMethods, ModelMethods
-import DoaMethods
 import torch
 from rich.progress import track
-import matplotlib.pyplot as plt
-import itertools
-from DoaMethods.MakeDataset import MakeDataset
 
-DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
+import DoaMethods
+from DoaMethods.MakeDataset import MakeDataset
+from DoaMethods.functions import ReadModel, timer, find_peak, Spect2DoA, Spect2DoA_no_insert
+from configs import is_insert_superresolution, name, UnfoldingMethods, DataMethods, ModelMethods
+
+DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods,
+                           ModelMethods=ModelMethods)
 
 
 class TestCurve:
@@ -22,8 +24,11 @@ class TestCurve:
         self.num_meshes = num_meshes
         self.num_lists, self.samples, self.num_sensors, self.num_snapshots = self.raw_data.shape
         self.label = test_mat["LabelPower"][()].reshape(self.num_lists, self.samples, 1, -1)
-        self.covariance_matrix_clean = np.zeros((self.num_lists, self.samples, self.num_sensors, self.num_sensors)) + 1j * np.zeros((self.num_lists, self.samples, self.num_sensors, self.num_sensors))
-        self.covariance_vector = np.zeros((self.num_lists, self.samples, self.num_sensors ** 2, 1)) + 1j * np.zeros((self.num_lists, self.samples, self.num_sensors ** 2, 1))
+        self.covariance_matrix_clean = np.zeros(
+            (self.num_lists, self.samples, self.num_sensors, self.num_sensors)) + 1j * np.zeros(
+            (self.num_lists, self.samples, self.num_sensors, self.num_sensors))
+        self.covariance_vector = np.zeros((self.num_lists, self.samples, self.num_sensors ** 2, 1)) + 1j * np.zeros(
+            (self.num_lists, self.samples, self.num_sensors ** 2, 1))
         self.pseudo_spectrum = np.zeros((self.num_lists, self.samples, 2, num_meshes))
         for i in range(self.num_lists):
             dataset = MakeDataset(self.raw_data[i], self.label[i])
@@ -42,19 +47,24 @@ class TestCurve:
                 true_angle = np.where(self.label[i, j] != 0)[1]
                 if len(true_angle) == num_sources:
                     self.DOA_train[i, j] = np.where(self.label[i, j] != 0)[1] - (self.num_meshes - 1) / 2
-                elif len(true_angle) == num_sources*2:
-                    self.DOA_train[i, j] = Spect2DoA(self.label[i, j].reshape(1, self.num_meshes, 1), num_sources=num_sources, start_bias=int((num_meshes-1)/2)).reshape(-1)
+                elif len(true_angle) == num_sources * 2:
+                    self.DOA_train[i, j] = Spect2DoA(self.label[i, j].reshape(1, self.num_meshes, 1),
+                                                     num_sources=num_sources,
+                                                     start_bias=int((num_meshes - 1) / 2)).reshape(
+                        -1) if is_insert_superresolution else Spect2DoA_no_insert(
+                        self.label[i, j].reshape(1, self.num_meshes, 1), num_sources=num_sources,
+                        start_bias=int((num_meshes - 1) / 2)).reshape(-1)
                     # a = 1
                 else:
                     raise ValueError("Wrong label!")
-
 
     @timer
     def test_model(self, name, model_dir, **kwargs):
         device = kwargs.get('device', 'cpu')
         self.num_layers = kwargs.get('num_layers', 4)
         dictionary = torch.from_numpy(self.dictionary)
-        model = ReadModel(name=name, dictionary=dictionary, num_layers=self.num_layers, device=device).load_model(model_dir)
+        model = ReadModel(name=name, dictionary=dictionary, num_layers=self.num_layers, device=device).load_model(
+            model_dir)
         model.eval()
         prediction = torch.zeros((self.num_lists, self.samples, self.num_meshes, 1))
         prediction_layers = torch.zeros((self.num_lists, self.samples, self.num_layers, self.num_meshes, 1))
@@ -102,7 +112,8 @@ class TestCurve:
         peak = np.zeros((num_lists, num_id, 2))
         for list_idx, idx in itertools.product(range(num_lists), range(num_id)):
             aps = predict[list_idx, idx]
-            peak[list_idx, idx] = find_peak(predict[list_idx, idx].reshape(1, self.num_meshes, 1), num_sources=2).reshape(
+            peak[list_idx, idx] = find_peak(predict[list_idx, idx].reshape(1, self.num_meshes, 1),
+                                            num_sources=2).reshape(
                 -1)
         return peak
 
@@ -135,7 +146,3 @@ class TestCurve:
             prob[snr] = prob[snr] / num_id
 
         return error_, RMSE, NMSE, prob / self.num_sources
-
-
-
-

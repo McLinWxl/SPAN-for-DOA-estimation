@@ -5,7 +5,7 @@ import numpy as np
 
 abs_path = os.path.abspath(os.path.dirname(__file__))
 
-interval = '10'
+interval = '35'
 
 configs = {
     'dataset_path': f'{abs_path}/Data/',

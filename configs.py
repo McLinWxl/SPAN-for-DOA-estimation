@@ -1,14 +1,15 @@
 import os
 abs_path = os.path.abspath(os.path.dirname(__file__))
 # abs_path = os.path.dirname(abs_path)
-name = 'ALISTA'
+name = 'MUSIC'
+is_insert_superresolution = False
 # LISTA, CPSS, AMI, ALISTA
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
 ###################
 # For LISTA, CPSS, AMI
 is_LF = False
-num_layers = 10
+num_layers = 20
 num_layers_test = num_layers
 is_checkpoint = False
 ####################
