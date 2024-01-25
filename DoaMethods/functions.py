@@ -121,6 +121,9 @@ class ReadModel:
         elif name == 'ALISTA':
             model = (DoaMethods.UnfoldingMethods.ALISTA(dictionary=dictionary, num_layers=num_layers, is_train=is_train)
                      .to(device))
+        elif name == 'ALISTA-SS':
+            model = (DoaMethods.UnfoldingMethods.ALISTA_SS(dictionary=dictionary, num_layers=num_layers, is_train=is_train)
+                     .to(device))
         elif name == 'CPSS':
             model = (DoaMethods.UnfoldingMethods.CPSS_LISTA(dictionary=dictionary, num_layers=num_layers)
                      .to(device))

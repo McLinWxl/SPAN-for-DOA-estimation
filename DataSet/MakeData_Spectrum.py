@@ -9,7 +9,7 @@ configs = {
     'Start': -60,
     'End': 60,
     'Interval': 1,
-    'num_sensor': 8,
+    'num_sensor': 1,
     'num_snapshot': 256,
     }
 
@@ -26,9 +26,9 @@ DOAs = np.array([
      [0.5, 35.5],
      ])
 
-DG = DataGenerator(DOAs, is_train=False, snr_db=0, repeat=1)
+DG = DataGenerator(DOAs, is_train=False, snr_db=0, repeat=1, num_sensors=configs['num_sensor'], num_snapshot=configs['num_snapshot'])
 RawData, Label = DG.get_raw_label()
 
-with h5py.File(f'{configs["dataset_path"]}TestSpectrum.h5', 'w') as f:
+with h5py.File(f'{configs["dataset_path"]}TestSpectrum_{configs["num_sensor"]}.h5', 'w') as f:
     f.create_dataset('RawData', data=RawData)
     f.create_dataset('LabelPower', data=Label)

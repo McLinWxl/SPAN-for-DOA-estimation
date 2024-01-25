@@ -1,15 +1,16 @@
 import os
 abs_path = os.path.abspath(os.path.dirname(__file__))
 # abs_path = os.path.dirname(abs_path)
-name = 'MUSIC'
-is_insert_superresolution = False
+name = 'ALISTA-SS'
+is_insert_superresolution = True
 # LISTA, CPSS, AMI, ALISTA
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
 ###################
+num_sensors = 1
 # For LISTA, CPSS, AMI
 is_LF = False
-num_layers = 20
+num_layers = 10
 num_layers_test = num_layers
 is_checkpoint = False
 ####################
@@ -22,7 +23,7 @@ epoch = 600
 is_scheduler = True
 warmup_epoch = 400
 ####################
-UnfoldingMethods= ['LISTA', 'CPSS', 'AMI', 'ALISTA']
+UnfoldingMethods= ['LISTA', 'CPSS', 'AMI', 'ALISTA', 'ALISTA-SS']
 DataMethods = ['DCNN']
 ModelMethods = ['MUSIC', 'MVDR', 'SBL', 'ISTA']
 ####################
@@ -61,7 +62,7 @@ config = {
 
 config_test = {
     'device': 'cpu',
-    'data_path': f'{abs_path}/DataSet/Data/TestSpectrum.h5',
+    'data_path': f'{abs_path}/DataSet/Data/TestSpectrum_{num_sensors}.h5',
     'model_path': f'{abs_path}/checkpoint/{name_test}.pth' if is_checkpoint else f'{abs_path}/Model/{name_test}/',
     'figure_path': f'{abs_path}/Figure/{name_test}/',
     'result_path': f'{abs_path}/Result/{name_test}/',

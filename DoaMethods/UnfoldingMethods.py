@@ -355,3 +355,93 @@ class ALISTA_DU(torch.nn.Module):
             x_real = x_real / self.covariance_norm
             x_layers_virtual[:, layer] = x_real
         return x_real, x_layers_virtual
+
+
+class ALISTA_SS(torch.nn.Module):
+    def __init__(self, dictionary, **kwargs):
+        """
+        :param dictionary **required**
+        :param num_layers: 10
+        :param device: 'cpu'
+        """
+        super(ALISTA_SS, self).__init__()
+        self.num_sensors = int(np.sqrt(dictionary.shape[0]))
+        M2 = self.num_sensors ** 2
+        self.num_meshes = dictionary.shape[1]
+        self.M2 = M2
+        self.covariance_norm = kwargs.get('covariance_norm', 1)
+        self.num_layers = kwargs.get('num_layers', 10)
+        self.device = kwargs.get('device', 'cpu')
+        self.is_train = kwargs.get('is_train', False)
+        # calculate the F-norm of dictionary matrix (64, 121)
+        self.dictionary = dictionary
+
+        # calculate the step size
+        self.stepsize_init = 1 / (5 * torch.linalg.eigvals(torch.matmul(dictionary.conj().T, dictionary)).real.max())
+        print(f"Step Size Init: {self.stepsize_init}")
+
+        # Trainable Parameters
+        self.gamma = torch.nn.Parameter(self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
+        self.theta = torch.nn.Parameter(0.1 * self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
+        self.relu = torch.nn.ReLU()
+
+        ite, epsilon = 0, 1
+        if self.is_train:
+            W, W_before = dictionary, torch.zeros_like(dictionary)
+            while epsilon > 0.00001 and ite < 10000:
+                W = self.PGD(W, self.stepsize_init)
+                epsilon = torch.norm(W_before - W)
+                W_before = W
+                ite += 1
+                print(ite, epsilon)
+        else:
+            W = torch.zeros_like(dictionary)
+        self.W = torch.nn.Parameter(W, requires_grad=False)
+
+        self.linear1 = torch.nn.Linear(self.num_meshes, self.num_meshes)
+        self.linear2 = torch.nn.Linear(self.num_meshes, self.num_meshes)
+        self.sigmoid = torch.nn.Sigmoid()
+
+    def PGD(self, W, gamma):
+        """
+        Projection Gradient Descent
+        :param W: Weight matrix
+        :param gamma: Step size
+        """
+        D = self.dictionary.to(torch.complex64)
+        I = torch.eye(self.num_meshes) + 1j * torch.zeros([self.num_meshes, self.num_meshes])
+        # Apply Projection
+        part1 = torch.matmul(D.conj().T, W) - I
+        part2 = torch.matmul(D, part1)
+        W = W - gamma * part2
+        return W
+
+    def cal_threshold_weight(self, x):
+        x_input = x.reshape(-1, self.num_meshes)
+        x_forward1 = self.linear1(x_input)
+        x_forward2 = self.sigmoid(x_forward1)
+        x_forward3 = self.linear2(x_forward2)
+        x_forward4 = self.sigmoid(x_forward3)
+        return x_forward4.reshape(-1, self.num_meshes, 1)
+
+    def forward(self, covariance_vector: torch.Tensor):
+        dictionary = self.dictionary.to(torch.complex64)
+        covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
+        self.covariance_norm = torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
+        covariance_vector = covariance_vector / self.covariance_norm
+        batch_size = covariance_vector.shape[0]
+        x0 = torch.matmul(dictionary.conj().T, covariance_vector)
+        x0 = x0 / self.covariance_norm
+        x_real = x0.real.float()
+        x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
+        for layer in range(self.num_layers):
+            p1 = torch.matmul(dictionary, x_real + 1j * torch.zeros_like(x_real)) - covariance_vector
+            p2 = self.gamma[layer] * torch.matmul(self.W.conj().T, p1)
+            p3 = x_real - p2
+            x_abs = torch.abs(p3)
+            x_threshold_weight = self.cal_threshold_weight(x_abs)
+            x_real = self.relu((x_abs - torch.mul(x_threshold_weight, x_real) - self.theta[layer]))
+            x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
+            x_real = x_real / self.covariance_norm
+            x_layers_virtual[:, layer] = x_real
+        return x_real, x_layers_virtual

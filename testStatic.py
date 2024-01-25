@@ -12,7 +12,7 @@ if name in UnfoldingMethods or name in DataMethods:
         predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
                                           num_layers=config['num_layers'], device=config['device'])
     else:
-        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/model_200.pth",
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
                                           num_layers=config['num_layers'], device=config['device'])
     peak = TestCurve.find_peak(predict.detach().numpy())
 

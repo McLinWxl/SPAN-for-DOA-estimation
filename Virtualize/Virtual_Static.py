@@ -50,16 +50,17 @@ if is_ablition:
     plot_graph(data, plot_config, names, mode, 'prob', 'accuracy')
 else:
     #     names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN", "ALISTA-10"]
-    names = ["LISTA-10", "MUSIC", "MVDR", "ALISTA-10"]
+    names = ["LISTA-10", "MUSIC", "MVDR", "ALISTA-10", "ALISTA-SS-10"]
     plot_config = {
         "AMI-LF10": {"label": 'AMI-LISTA'},
         "LISTA-10": {"label": 'LISTA'},
         "CPSS-10": {"label": 'CPSS-LISTA'},
         "MUSIC": {"label": 'MUSIC'},
-        "MVDR": {"label": 'MVDR', "color": 'orange'},
-        "DCNN": {"label": 'DCNN', "color": 'fuchsia'},
-        "ALISTA-10": {"label": 'ALISTA', "color": 'lime'},
-        "ALISTA-20": {"label": 'ALISTA-20', "color": 'purple'},
+        "MVDR": {"label": 'MVDR'},
+        "DCNN": {"label": 'DCNN'},
+        "ALISTA-10": {"label": 'ALISTA'},
+        "ALISTA-20": {"label": 'ALISTA-20'},
+        "ALISTA-SS-10": {"label": 'ALISTA-SS', 'color': 'lightcoral'},
     }
     data = load_data(names, mode, testSNR_interval)
     plt.style.use(['science', 'ieee', 'grid'])
