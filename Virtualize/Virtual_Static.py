@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from configs import testSNR_interval, config_test_static
+from configs import testSNR_interval, config_test_static, num_sensors
 is_ablition = False
 mode = config_test_static['mode']
 import numpy as np
@@ -8,7 +8,12 @@ import numpy as np
 def load_data(names, mode, testSNR_interval):
     data = {}
     for name in names:
-        varSNR_dir = f"../Result/{name}/var{mode}{testSNR_interval}.csv" if mode != 'Separation' else f"../Result/{name}/var{mode}.csv"
+        if mode in ['SNR', 'Snapshots']:
+            varSNR_dir = f"../Result_A/{name}/var{mode}{testSNR_interval}_{num_sensors}.csv"
+        elif mode == 'Separation':
+            varSNR_dir = f"../Result_A/{name}/var{mode}_{num_sensors}.csv"
+        elif mode == 'Sensors':
+             varSNR_dir = f"../Result_A/{name}/var{mode}.csv"
         varSNR, RMSE, NMSE, prob = np.loadtxt(varSNR_dir, delimiter=',', skiprows=1).T
         data[name] = {'varSNR': varSNR, 'RMSE': RMSE, 'NMSE': NMSE, 'prob': prob}
     return data
@@ -50,7 +55,7 @@ if is_ablition:
     plot_graph(data, plot_config, names, mode, 'prob', 'accuracy')
 else:
     #     names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN", "ALISTA-10"]
-    names = ["LISTA-10", "MUSIC", "MVDR", "ALISTA-10", "ALISTA-SS-10"]
+    names = ["MUSIC", "MVDR", "DCNN", "ALISTA-SS-10"] #
     plot_config = {
         "AMI-LF10": {"label": 'AMI-LISTA'},
         "LISTA-10": {"label": 'LISTA'},

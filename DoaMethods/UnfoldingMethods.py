@@ -205,7 +205,6 @@ class ALISTA(torch.nn.Module):
         self.is_SS = kwargs.get('SS', True)
         if self.is_SS:
             self.p_para = 0.031 * torch.ones(self.num_layers)
-        self.is_train = kwargs.get('is_train', False)
         # calculate the F-norm of dictionary matrix (64, 121)
         self.dictionary = dictionary
 
@@ -219,17 +218,15 @@ class ALISTA(torch.nn.Module):
         self.relu = torch.nn.ReLU()
 
         ite, epsilon = 0, 1
-        if self.is_train:
-            W, W_before = dictionary, torch.zeros_like(dictionary)
-            while epsilon > 0.00001 and ite < 10000:
-                W = self.PGD(W, self.stepsize_init)
-                epsilon = torch.norm(W_before - W)
-                W_before = W
-                ite += 1
-                print(ite, epsilon)
-        else:
-            W = torch.zeros_like(dictionary)
-        self.W = torch.nn.Parameter(W, requires_grad=False)
+        W, W_before = dictionary, torch.zeros_like(dictionary)
+        while epsilon > 0.00001 and ite < 100000:
+            W = self.PGD(W, self.stepsize_init)
+            epsilon = torch.norm(W_before - W)
+            W_before = W
+            ite += 1
+            print(ite, epsilon)
+
+        self.W = W
 
     def PGD(self, W, gamma):
         """
@@ -372,7 +369,6 @@ class ALISTA_SS(torch.nn.Module):
         self.covariance_norm = kwargs.get('covariance_norm', 1)
         self.num_layers = kwargs.get('num_layers', 10)
         self.device = kwargs.get('device', 'cpu')
-        self.is_train = kwargs.get('is_train', False)
         # calculate the F-norm of dictionary matrix (64, 121)
         self.dictionary = dictionary
 
@@ -386,17 +382,15 @@ class ALISTA_SS(torch.nn.Module):
         self.relu = torch.nn.ReLU()
 
         ite, epsilon = 0, 1
-        if self.is_train:
-            W, W_before = dictionary, torch.zeros_like(dictionary)
-            while epsilon > 0.00001 and ite < 10000:
-                W = self.PGD(W, self.stepsize_init)
-                epsilon = torch.norm(W_before - W)
-                W_before = W
-                ite += 1
-                print(ite, epsilon)
-        else:
-            W = torch.zeros_like(dictionary)
-        self.W = torch.nn.Parameter(W, requires_grad=False)
+        W, W_before = dictionary, torch.zeros_like(dictionary)
+        while epsilon > 0.00001 and ite < 10000:
+            W = self.PGD(W, self.stepsize_init)
+            epsilon = torch.norm(W_before - W)
+            W_before = W
+            ite += 1
+            print(ite, epsilon)
+
+        self.W = W
 
         self.linear1 = torch.nn.Linear(self.num_meshes, self.num_meshes)
         self.linear2 = torch.nn.Linear(self.num_meshes, self.num_meshes)

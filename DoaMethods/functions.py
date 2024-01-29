@@ -205,11 +205,14 @@ def min_max_norm(x):
 
 
 
-def find_peak(spectrum, num_sources=2, height_ignore=0, start_bias=60):
+def find_peak(spectrum, num_sources=2, height_ignore=0, start_bias=60, is_insert=False):
     numTest, num_mesh, _ = spectrum.shape
     angles = np.zeros((num_sources, numTest))
     for num in range(numTest):
         li = spectrum[num, :].reshape(-1)
-        angle = Spect2DoA(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources, height_ignore=height_ignore, start_bias=start_bias)
+        if is_insert:
+            angle = Spect2DoA(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources, height_ignore=height_ignore, start_bias=start_bias)
+        else:
+            angle = Spect2DoA_no_insert(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources, height_ignore=height_ignore, start_bias=start_bias)
         angles[:, num] = angle.reshape(-1)
     return np.sort(angles, axis=0)[::-1]

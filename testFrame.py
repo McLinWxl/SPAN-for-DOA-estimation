@@ -3,7 +3,7 @@ import numpy as np
 import DoaMethods
 import torch.utils.data
 from configs import config_test as config
-from configs import name, DataMethods, UnfoldingMethods, ModelMethods, is_checkpoint
+from configs import name, DataMethods, UnfoldingMethods, ModelMethods, is_checkpoint, num_sensors
 import matplotlib.pyplot as plt
 import numpy
 from DoaMethods.functions import ReadRaw
@@ -31,7 +31,7 @@ if name in UnfoldingMethods or name in DataMethods:
     # Res = Res.real
     # plt.matshow(Res.detach().numpy())
     # plt.show()
-    print(f"Step Size: {model.gamma}")
+    # print(f"Step Size: {model.gamma}")
     # print(f"Threshold: {model.theta}")
     # print(f"Theta/gamma: {model.theta/model.gamma}")
     # print(f"CPSS: {model.p_para}")
@@ -111,7 +111,7 @@ for idx in idxs:
         # Delete the white space around the figure
         # plt.subplots_adjust(left=0, right=0.9, bottom=0, top=1)
         # plt.show()
-        plt.savefig(f"{config['figure_path']}/layer_{idx}.pdf")
+        plt.savefig(f"{config['figure_path']}/layer_{idx}_{num_sensors}.pdf")
         plt.show()
         plt.close()
 
@@ -128,7 +128,7 @@ for idx in idxs:
             plt.xlabel('Angle $^{\circ}$')
             plt.ylabel('Amp.')
             plt.legend()
-            plt.savefig(f"{config['figure_path']}/output_{idx}.pdf")
+            plt.savefig(f"{config['figure_path']}/output_{idx}_{num_sensors}.pdf")
             plt.show()
 
     elif name in DataMethods:
@@ -144,7 +144,7 @@ for idx in idxs:
             plt.ylabel('Amp.')
             plt.legend()
             # plt.show()
-            plt.savefig(f"{config['figure_path']}/output_{idx}.pdf")
+            plt.savefig(f"{config['figure_path']}/output_{idx}_{num_sensors}.pdf")
             plt.show()
 
     elif name in ModelMethods:
@@ -158,6 +158,6 @@ for idx in idxs:
             plt.ylabel('Amp.')
             plt.legend()
             # plt.show()
-            plt.savefig(f"{config['figure_path']}/output_{idx}.pdf")
+            plt.savefig(f"{config['figure_path']}/output_{idx}_{num_sensors}.pdf")
             plt.show()
 

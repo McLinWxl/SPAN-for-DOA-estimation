@@ -50,10 +50,7 @@ class TestCurve:
                 elif len(true_angle) == num_sources * 2:
                     self.DOA_train[i, j] = Spect2DoA(self.label[i, j].reshape(1, self.num_meshes, 1),
                                                      num_sources=num_sources,
-                                                     start_bias=int((num_meshes - 1) / 2)).reshape(
-                        -1) if is_insert_superresolution else Spect2DoA_no_insert(
-                        self.label[i, j].reshape(1, self.num_meshes, 1), num_sources=num_sources,
-                        start_bias=int((num_meshes - 1) / 2)).reshape(-1)
+                                                     start_bias=int((num_meshes - 1) / 2)).reshape(-1)
                     # a = 1
                 else:
                     raise ValueError("Wrong label!")
@@ -107,14 +104,13 @@ class TestCurve:
             raise ValueError("Wrong name!")
         return prediction
 
-    def find_peak(self, predict):
+    def find_peak(self, predict, is_insert=False):
         num_lists, num_id, _, _ = predict.shape
         peak = np.zeros((num_lists, num_id, 2))
         for list_idx, idx in itertools.product(range(num_lists), range(num_id)):
             aps = predict[list_idx, idx]
             peak[list_idx, idx] = find_peak(predict[list_idx, idx].reshape(1, self.num_meshes, 1),
-                                            num_sources=2).reshape(
-                -1)
+                                            num_sources=2, is_insert=is_insert).reshape(-1)
         return peak
 
     def calculate_error(self, peak):

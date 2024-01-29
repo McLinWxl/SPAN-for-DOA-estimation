@@ -12,9 +12,9 @@ configs = {
     'Start': -60,
     'End': 60,
     'Interval': 1,
-    'num_sensor': 8,
+    'num_sensor': 4,
     'num_snapshot': 256,
-    'MC': 100
+    'MC': 100,
 }
 
 Angles = np.arange(configs['Start'], configs['End'] + configs['Interval'], configs['Interval'])
@@ -68,9 +68,9 @@ RawData = np.zeros((len(snr_db), len(DOAs) * configs['MC'], configs['num_sensor'
                    dtype=np.complex64)
 Label = np.zeros((len(snr_db), len(DOAs) * configs['MC'], num_meshes, 1), dtype=np.float32)
 for i in range(len(snr_db)):
-    DG = DataGenerator(DOAs, is_train=False, snr_db=snr_db[i], repeat=configs['MC'])
+    DG = DataGenerator(DOAs, is_train=False, snr_db=snr_db[i], repeat=configs['MC'], num_sensors=configs['num_sensor'],)
     RawData[i], Label[i] = DG.get_raw_label()
 
-with h5py.File(f'{configs["dataset_path"]}TestData_varSNR_{interval}.h5', 'w') as f:
+with h5py.File(f'{configs["dataset_path"]}TestData_varSNR_{interval}_{configs["num_sensor"]}.h5', 'w') as f:
     f.create_dataset('RawData', data=RawData)
     f.create_dataset('LabelPower', data=Label)

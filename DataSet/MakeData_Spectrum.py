@@ -9,7 +9,7 @@ configs = {
     'Start': -60,
     'End': 60,
     'Interval': 1,
-    'num_sensor': 1,
+    'num_sensor': 4,
     'num_snapshot': 256,
     }
 
