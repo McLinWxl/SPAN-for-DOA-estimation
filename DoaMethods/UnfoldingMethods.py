@@ -182,7 +182,7 @@ class CPSS_LISTA(torch.nn.Module):
                 eta = soft_threshold(r, self.theta[i])
             eta = torch.abs(eta)
             eta = torch.abs(eta) / (
-                        torch.sqrt(torch.tensor(2.)) * (torch.norm(torch.abs(eta), dim=1, keepdim=True) + 1e-20))
+                    torch.sqrt(torch.tensor(2.)) * (torch.norm(torch.abs(eta), dim=1, keepdim=True) + 1e-20))
             eta_layers[:, i, :, :] = eta
         return eta, eta_layers
 
@@ -242,7 +242,6 @@ class ALISTA(torch.nn.Module):
         W = W - gamma * part2
         return W
 
-
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
         covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
@@ -299,7 +298,8 @@ class ALISTA_DU(torch.nn.Module):
         print(f"Step Size Init: {stepsize_init}")
         # Trainable Parameters
         self.stepsize_PGD = torch.nn.Parameter(stepsize_init, requires_grad=True)
-        self.weight_PGD = torch.nn.Parameter(torch.eye(self.num_meshes) + 1j * torch.zeros([self.num_meshes, self.num_meshes]), requires_grad=True)
+        self.weight_PGD = torch.nn.Parameter(
+            torch.eye(self.num_meshes) + 1j * torch.zeros([self.num_meshes, self.num_meshes]), requires_grad=True)
         # self.penalty = torch.nn.Parameter(torch.ones(self.num_meshes, self.num_meshes) + torch.eye(self.num_meshes), requires_grad=False)
 
         self.gamma = torch.nn.Parameter(stepsize_init * torch.ones(self.num_layers), requires_grad=True)
@@ -341,7 +341,7 @@ class ALISTA_DU(torch.nn.Module):
             p3 = x_real - p2
             x_abs = torch.abs(p3)
             if self.is_SS:
-                x_real = support_selection(x_abs, self.theta[layer], self.p_para[layer]/100)
+                x_real = support_selection(x_abs, self.theta[layer], self.p_para[layer] / 100)
             else:
                 # if layer < self.num_layers - 1:
                 #     x_real = self.leakly_relu(x_abs - self.theta[layer])
@@ -426,7 +426,7 @@ class ALISTA_SS(torch.nn.Module):
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector)
         x0 = x0 / self.covariance_norm
-        x_real = x0.real.float()
+        x_real, x_init = x0.real.float(), x0.real.float()
         x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
         for layer in range(self.num_layers):
             p1 = torch.matmul(dictionary, x_real + 1j * torch.zeros_like(x_real)) - covariance_vector
@@ -438,4 +438,13 @@ class ALISTA_SS(torch.nn.Module):
             x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
             x_real = x_real / self.covariance_norm
             x_layers_virtual[:, layer] = x_real
+            # To visualize
+            # plt.matshow(x_init[-1].detach().numpy(), cmap=plt.cm.Reds)
+            # plt.show()
+            # plt.matshow(x_abs[-1].detach().numpy(), cmap=plt.cm.Reds)
+            # plt.show()
+            # plt.matshow(x_threshold_weight[-1].detach().numpy(), cmap=plt.cm.Reds)
+            # plt.show()
+            # plt.matshow(x_real[-1].detach().numpy(), cmap=plt.cm.Reds)
+            # plt.show()
         return x_real, x_layers_virtual

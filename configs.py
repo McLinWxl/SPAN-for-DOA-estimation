@@ -2,20 +2,20 @@ import os
 abs_path = os.path.abspath(os.path.dirname(__file__))
 # abs_path = os.path.dirname(abs_path)
 name = 'ALISTA-SS'
-is_insert_superresolution = True
+is_insert_superresolution = True if name == 'ALISTA-SS' else False
 # LISTA, CPSS, AMI, ALISTA
 # DCNN
 # MUSIC, MVDR, SBL, ISTA
 ###################
-num_sensors = 16
+num_sensors = 8
 # For LISTA, CPSS, AMI
 is_LF = False
 num_layers = 10
 num_layers_test = num_layers
-is_checkpoint = False
+is_checkpoint = True
 ####################
 mode = 'SNR'  # SNR, Snapshots, Separation, Sensors
-testSNR_interval = 35
+testSNR_interval = 10
 ####################
 batch_size = 128
 lr = 0.001

@@ -34,7 +34,7 @@ def plot_graph(data, plot_config, names, mode, ylabel, save_as):
     plt.title(f"{ylabel} vs {mode}" if ylabel != 'prob' else "Accuracy of Estimation")
     plt.legend(loc='upper right' if ylabel != 'prob' else 'lower right', prop={'size': 5})
     plt.grid(which='both', axis='both', linestyle='--', linewidth=0.1)
-    plt.savefig(f"../Figure/Static/Ab_var{mode}{testSNR_interval}_{save_as}.pdf" if is_ablition else f"../Figure/Static/var{mode}{testSNR_interval}_{save_as}.pdf")
+    plt.savefig(f"../Figure_A/Static/Ab_var{mode}{testSNR_interval}_{save_as}.pdf" if is_ablition else f"../Figure_A/Static/var{mode}{testSNR_interval}_{save_as}.pdf")
     plt.show()
     plt.close()
 
