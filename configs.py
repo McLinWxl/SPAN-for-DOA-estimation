@@ -10,9 +10,9 @@ is_insert_superresolution = True if name == 'ALISTA-SS' else False
 num_sensors = 8
 # For LISTA, CPSS, AMI
 is_LF = False
-num_layers = 10
+num_layers = 20
 num_layers_test = num_layers
-is_checkpoint = True
+is_checkpoint = False
 ####################
 mode = 'SNR'  # SNR, Snapshots, Separation, Sensors
 testSNR_interval = 10
