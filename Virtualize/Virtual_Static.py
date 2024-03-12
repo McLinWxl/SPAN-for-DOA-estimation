@@ -19,9 +19,9 @@ def load_data(names, mode, testSNR_interval):
     return data
 
 def plot_graph(data, plot_config, names, mode, ylabel, save_as):
-    for name, config in plot_config.items():
-        if name in names:
-            plt.plot(data[name]['varSNR'], data[name][ylabel], **config)
+    for name in names:
+        if name in plot_config.keys():
+            plt.plot(data[name]['varSNR'], data[name][ylabel], **plot_config[name])
     plt.xlabel('SNR(dB)' if mode == 'SNR' else 'Angle Separation()$^{\circ}$)' if mode == 'Separation' else 'Snapshots' if mode == 'Snapshots' else ValueError("Wrong mode!"))
     plt.ylabel(f'{ylabel}($^\circ$)')
     if ylabel == 'RMSE':
@@ -55,7 +55,7 @@ if is_ablition:
     plot_graph(data, plot_config, names, mode, 'prob', 'accuracy')
 else:
     #     names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN", "ALISTA-10"]
-    names = ["MUSIC", "MVDR", "DCNN", "ALISTA-SS-10"] #
+    names = ["ALISTA-SS-20", "MUSIC", "MVDR", "DCNN", "AMI-LF10"] #
     plot_config = {
         "AMI-LF10": {"label": 'AMI-LISTA'},
         "LISTA-10": {"label": 'LISTA'},
@@ -66,6 +66,7 @@ else:
         "ALISTA-10": {"label": 'ALISTA'},
         "ALISTA-20": {"label": 'ALISTA-20'},
         "ALISTA-SS-10": {"label": 'ALISTA-SS', 'color': 'lightcoral'},
+        "ALISTA-SS-20": {"label": 'ALISTA-SS', 'color': 'lightcoral'},
     }
     data = load_data(names, mode, testSNR_interval)
     plt.style.use(['science', 'ieee', 'grid'])

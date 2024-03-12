@@ -86,11 +86,12 @@ def DoA2Spect(DoA, num_meshes=121, num_sources=2, start_bias=60):
 def timer(func):
     def func_wrapper(*args, **kwargs):
         from time import time
+        name = kwargs.get('name', func.__name__)
         time_start = time()
         result = func(*args, **kwargs)
         time_end = time()
         time_spend = time_end - time_start
-        print('%s cost time: %.3f s' % (func.__name__, time_spend))
+        print(f'{name:^20} Time spend: {time_spend:.4f}')
         return result
 
     return func_wrapper

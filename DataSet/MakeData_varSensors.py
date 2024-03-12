@@ -73,4 +73,6 @@ for i in range(len(num_sensors)):
 with h5py.File(f'{configs["dataset_path"]}TestData_varSensors_{interval}.h5', 'w') as f:
     f.create_dataset('RawData', data=RawData)
     f.create_dataset('LabelPower', data=Label)
+    f.create_dataset('DOAs', data=DOAs)
+    f.create_dataset('num_sensors', data=num_sensors)
 

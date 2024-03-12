@@ -392,9 +392,10 @@ class ALISTA_SS(torch.nn.Module):
 
         self.W = W
 
-        self.linear1 = torch.nn.Linear(self.num_meshes, self.num_meshes)
-        self.linear2 = torch.nn.Linear(self.num_meshes, self.num_meshes)
-        self.sigmoid = torch.nn.Sigmoid()
+        self.conv1 = torch.nn.Conv1d(1, 2, 5, padding='same')
+        self.conv2 = torch.nn.Conv1d(2, 2, 5, padding='same')
+        self.conv3 = torch.nn.Conv1d(2, 1, 5, padding='same')
+        self.activate = torch.nn.Sigmoid()
 
     def PGD(self, W, gamma):
         """
@@ -411,12 +412,11 @@ class ALISTA_SS(torch.nn.Module):
         return W
 
     def cal_threshold_weight(self, x):
-        x_input = x.reshape(-1, self.num_meshes)
-        x_forward1 = self.linear1(x_input)
-        x_forward2 = self.sigmoid(x_forward1)
-        x_forward3 = self.linear2(x_forward2)
-        x_forward4 = self.sigmoid(x_forward3)
-        return x_forward4.reshape(-1, self.num_meshes, 1)
+        x_input = x.reshape(-1, 1, self.num_meshes)
+        x_conv1 = self.activate(self.conv1(x_input))
+        x_conv2 = self.activate(self.conv2(x_conv1))
+        x_forward = self.activate(self.conv3(x_conv2))
+        return x_forward.reshape(-1, self.num_meshes, 1)
 
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)

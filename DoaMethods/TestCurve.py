@@ -18,6 +18,7 @@ class TestCurve:
 
     def __init__(self, dir_test, resolution=1, num_sources=2, num_meshes=121):
         test_mat = h5py.File(dir_test, 'r')
+        self.test_mat = test_mat
         self.raw_data = test_mat["RawData"][()]
         assert len(self.raw_data.shape) == 4
         self.num_sources = num_sources
@@ -81,6 +82,7 @@ class TestCurve:
 
         return prediction, prediction_layers
 
+    @timer
     def test_alg(self, name, **kwargs):
         prediction = np.zeros((self.num_lists, self.samples, self.num_meshes, 1))
         algorithm = DoaMethods.ModelMethods.ModelMethods(dictionary=self.dictionary)
