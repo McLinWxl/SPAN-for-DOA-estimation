@@ -8,43 +8,21 @@ print(mode)
 DoaMethods.configs.configs(name=name, UnfoldingMethods=UnfoldingMethods, DataMethods=DataMethods, ModelMethods=ModelMethods)
 
 TestCurve = DoaMethods.TestCurve(dir_test=config['data_path'])
-if mode != 'Sensors':
-    if name in UnfoldingMethods or name in DataMethods:
-        if is_checkpoint:
-            predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
-                                              num_layers=config['num_layers'], device=config['device'])
-        else:
-            predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
-                                              num_layers=config['num_layers'], device=config['device'])
-        peak = TestCurve.find_peak(predict.detach().numpy(), is_insert_superresolution)
+if name in UnfoldingMethods or name in DataMethods:
+    if is_checkpoint:
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
+                                          num_layers=config['num_layers'], device=config['device'])
+    else:
+        predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
+                                          num_layers=config['num_layers'], device=config['device'])
+    peak = TestCurve.find_peak(predict.detach().numpy(), is_insert_superresolution)
 
-    elif name in ModelMethods:
-        predict = TestCurve.test_alg(name=name)
-        peak = TestCurve.find_peak(predict, is_insert=is_insert_superresolution)
-    else:
-        raise ValueError("Wrong name!")
-    _, RMSE, NMSE, prob = TestCurve.calculate_error(peak)
+elif name in ModelMethods:
+    predict = TestCurve.test_alg(name=name)
+    peak = TestCurve.find_peak(predict, is_insert=is_insert_superresolution)
 else:
-    if name in UnfoldingMethods or name in DataMethods:
-        list_sensors = TestCurve.test_mat["num_sensors"][()]
-        predict_list = np.zeros((len(list_sensors), TestCurve.test_mat["RawData"][()].shape[1], TestCurve.num_meshes, 1))
-        label = TestCurve.test_mat["LabelPower"][()].reshape((len(list_sensors), TestCurve.test_mat["RawData"][()].shape[1], 1))
-        for idx, sensors in enumerate(list_sensors):
-            TestCurve.raw_data = TestCurve.test_mat["RawData"][()][idx, :, :sensors, :]
-            dataset = DoaMethods.MakeDataset.MakeDataset(TestCurve.raw_data[1], label[1])
-            TestCurve.dictionary = dataset.dictionary
-            if is_checkpoint:
-                predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}",
-                                                  num_layers=config['num_layers'], device=config['device'])
-                predict_list[idx] = predict.detach().numpy()
-            else:
-                predict, _ = TestCurve.test_model(name=name, model_dir=f"{config['model_path']}/best.pth",
-                                                  num_layers=config['num_layers'], device=config['device'])
-                predict_list[idx] = predict.detach().numpy()
-        peak = TestCurve.find_peak(predict_list, is_insert_superresolution)
-    else:
-        raise ValueError("Wrong name!")
-    _, RMSE, NMSE, prob = TestCurve.calculate_error(peak)
+    raise ValueError("Wrong name!")
+_, RMSE, NMSE, prob = TestCurve.calculate_error(peak)
 
 plt.style.use(['science', 'ieee', 'grid'])
 mode_ranges = {'SNR': range(-12, 13, 1),
