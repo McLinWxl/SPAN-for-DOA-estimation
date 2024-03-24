@@ -377,8 +377,8 @@ class ALISTA_SS(torch.nn.Module):
         print(f"Step Size Init: {self.stepsize_init}")
 
         # Trainable Parameters
-        self.gamma = torch.nn.Parameter(self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
-        self.theta = torch.nn.Parameter(0.1 * self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
+        # self.gamma = torch.nn.Parameter(self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
+        # self.theta = torch.nn.Parameter(0.1 * self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
         self.relu = torch.nn.ReLU()
 
         ite, epsilon = 0, 1
@@ -392,10 +392,23 @@ class ALISTA_SS(torch.nn.Module):
 
         self.W = W
 
-        self.conv1 = torch.nn.Conv1d(1, 2, 5, padding='same')
-        self.conv2 = torch.nn.Conv1d(2, 2, 5, padding='same')
-        self.conv3 = torch.nn.Conv1d(2, 1, 5, padding='same')
-        self.activate = torch.nn.Sigmoid()
+        # self.conv1 = torch.nn.Conv1d(1, 8, 15, padding='same')
+        # self.conv2 = torch.nn.Conv1d(8, 4, 5, padding='same')
+        # self.conv3 = torch.nn.Conv1d(4, 1, 3, padding='same')
+        self.con0 = torch.nn.Conv1d(1, 16, 6, stride=3)
+        self.con1 = torch.nn.Conv1d(16, 8, 6, stride=2)
+        self.con2 = torch.nn.Conv1d(8, 4, 3, stride=1)
+        self.con3 = torch.nn.Conv1d(4, 2, 3, stride=1)
+
+        # self.con1_threshold = torch.nn.Conv1d(1, 8, 15, stride=6)
+        # self.con2_threshold = torch.nn.Conv1d(8, 4, 5, stride=3)
+        # self.con3_threshold = torch.nn.Conv1d(4, 1, 3, stride=1)
+        #
+        # self.con1_stepsize = torch.nn.Conv1d(1, 8, 15,stride=6)
+        # self.con2_stepsize = torch.nn.Conv1d(8, 4, 5, stride=3)
+        # self.con3_stepsize = torch.nn.Conv1d(4, 1, 3, stride=1)
+
+        self.activate = torch.nn.LeakyReLU()
 
     def PGD(self, W, gamma):
         """
@@ -411,40 +424,71 @@ class ALISTA_SS(torch.nn.Module):
         W = W - gamma * part2
         return W
 
-    def cal_threshold_weight(self, x):
+    # def cal_threshold(self, x):
+    #     # x_input = x.reshape(-1, 1, self.num_meshes)
+    #     # x_conv1 = self.activate(self.conv1(x_input))
+    #     # x_conv2 = self.activate(self.conv2(x_conv1))
+    #     # x_forward = self.activate(self.conv3(x_conv2))
+    #     # return x_forward.reshape(-1, self.num_meshes, 1)
+    #     x_input = x.reshape(-1, 1, self.num_meshes)
+    #     # print(x_input.shape)
+    #     x_conv1 = self.activate(self.con1_threshold(x_input))
+    #     # print(x_conv1.shape)
+    #     x_conv2 = self.activate(self.con2_threshold(x_conv1))
+    #     # print(x_conv2.shape)
+    #     x_forward = self.activate(self.con3_threshold(x_conv2))
+    #     # print(x_forward.shape)
+    #     step_size = torch.abs(torch.mean(x_forward, dim=2))
+    #     return step_size.reshape(-1, 1, 1)
+    #
+    # def cal_stepsize(self, x):
+    #     x_input = x.reshape(-1, 1, self.num_meshes)
+    #     # print(x_input.shape)
+    #     x_conv1 = self.activate(self.con1_stepsize(x_input))
+    #     # print(x_conv1.shape)
+    #     x_conv2 = self.activate(self.con2_stepsize(x_conv1))
+    #     # print(x_conv2.shape)
+    #     x_forward = self.activate(self.con3_stepsize(x_conv2))
+    #     # print(x_forward.shape)
+    #     step_size = torch.abs(torch.mean(x_forward, dim=2))
+    #     return step_size.reshape(-1, 1, 1)
+
+    def cal_params(self, x):
         x_input = x.reshape(-1, 1, self.num_meshes)
-        x_conv1 = self.activate(self.conv1(x_input))
-        x_conv2 = self.activate(self.conv2(x_conv1))
-        x_forward = self.activate(self.conv3(x_conv2))
-        return x_forward.reshape(-1, self.num_meshes, 1)
+        # print(x_input.shape)
+        x_conv0 = self.activate(self.con0(x_input))
+        # print(x_conv0.shape)
+        x_conv1 = self.activate(self.con1(x_conv0))
+        # print(x_conv1.shape)
+        x_conv2 = self.activate(self.con2(x_conv1))
+        # print(x_conv2.shape)
+        x_forward = self.activate(self.con3(x_conv2))
+        # print(x_forward.shape)
+        params = torch.abs(torch.mean(x_forward, dim=2)).reshape(-1, 2, 1)
+        return params[:, 0, :].reshape(-1, 1, 1), params[:, 1, :].reshape(-1, 1, 1)
 
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
         covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
-        self.covariance_norm = torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
+        # self.covariance_norm = torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
         covariance_vector = covariance_vector / self.covariance_norm
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector)
-        x0 = x0 / self.covariance_norm
+        x0 = x0 / torch.norm(x0, dim=1, keepdim=True)
         x_real, x_init = x0.real.float(), x0.real.float()
         x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
         for layer in range(self.num_layers):
             p1 = torch.matmul(dictionary, x_real + 1j * torch.zeros_like(x_real)) - covariance_vector
-            p2 = self.gamma[layer] * torch.matmul(self.W.conj().T, p1)
+            # step_size = self.cal_stepsize(x_real)
+            step_size, threshold = self.cal_params(x_real)
+            # print(step_size.shape)
+            # print(torch.matmul(self.W.conj().T, p1).shape)
+            p2 = torch.mul(step_size, torch.matmul(self.W.conj().T, p1))
             p3 = x_real - p2
             x_abs = torch.abs(p3)
-            x_threshold_weight = self.cal_threshold_weight(x_abs)
-            x_real = self.relu((x_abs - torch.mul(x_threshold_weight, x_real) - self.theta[layer]))
+            # x_threshold_weight = self.cal_threshold(x_abs)
+            x_real = self.relu(x_abs - threshold)
             x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
-            x_real = x_real / self.covariance_norm
             x_layers_virtual[:, layer] = x_real
-            # To visualize
-            # plt.matshow(x_init[-1].detach().numpy(), cmap=plt.cm.Reds)
-            # plt.show()
-            # plt.matshow(x_abs[-1].detach().numpy(), cmap=plt.cm.Reds)
-            # plt.show()
-            # plt.matshow(x_threshold_weight[-1].detach().numpy(), cmap=plt.cm.Reds)
-            # plt.show()
-            # plt.matshow(x_real[-1].detach().numpy(), cmap=plt.cm.Reds)
-            # plt.show()
+
         return x_real, x_layers_virtual

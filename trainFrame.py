@@ -40,8 +40,9 @@ for epoch in range(config['epoch']+1):
             output, layers_output = model(data)
             if config['LF']:
                 for i in range(config['num_layers']):
-                    mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32))) * (
-                            torch.log(torch.tensor(i + 2)))
+                    # mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32))) * (
+                    #         torch.log(torch.tensor(i + 2)))
+                    mse_loss = mse_loss + (loss(layers_output[:, i].to(torch.float32), label.to(torch.float32)))
             else:
                 mse_loss = loss(output.to(torch.float32), label.to(torch.float32))
         elif name in DataMethods:
@@ -75,9 +76,11 @@ for epoch in range(config['epoch']+1):
                 output, layers_output_val = model(covariance_array)
                 if config['LF']:
                     for i in range(config['num_layers']):
-                        loss_value = loss_value + (
-                            loss(layers_output_val[:, i].to(torch.float32), label.to(torch.float32))) * (
-                                             torch.log(torch.tensor(i + 2)))
+                        # loss_value = loss_value + (
+                        #     loss(layers_output_val[:, i].to(torch.float32), label.to(torch.float32))) * (
+                        #                      torch.log(torch.tensor(i + 2)))
+                        loss_value = loss_value + (loss(layers_output_val[:, i].to(torch.float32), label.to(torch.float32)))
+
                 else:
                     loss_value = loss(output.to(torch.float32), label.to(torch.float32))
                 mse_val_last += loss_value.item()

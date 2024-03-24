@@ -46,7 +46,8 @@ class DataGenerator:
                         # right_power = (right - self.DOAs[r, i, j] - bias) / (right - left) * signal_power
                         self.labels[r, i, left, 0] = left_power
                         self.labels[r, i, right, 0] = right_power
-                    snr_db = self.snr_db if not self.is_train else np.random.uniform(-10, 0)
+                    snr_db = self.snr_db
+                    # snr_db = self.snr_db if not self.is_train else np.random.uniform(-10, 0)
                     data_all[r, i, j, :, :] = self.add_awgn(data_all[r, i, j, :, :], signal_power, snr_db)
                     self.data[r, i, :, :] += data_all[r, i, j, :, :]
 
