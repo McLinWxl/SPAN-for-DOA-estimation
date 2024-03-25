@@ -1,9 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from configs import testSNR_interval, config_test_static, num_sensors
-is_ablition = False
 mode = config_test_static['mode']
 import numpy as np
+
+is_ablition = True
+
 
 def load_data(names, mode, testSNR_interval):
     data = {}
@@ -39,14 +41,14 @@ def plot_graph(data, plot_config, names, mode, ylabel, save_as):
     plt.close()
 
 if is_ablition:
-    names = ["AMI-LF10", "LISTA-LF10", "AMI-10", "LISTA-10"]
-    labels = ['AMI-LISTA', 'LISTA-LF', 'AMI-10', 'LISTA-10']
-    ylabels = ['RMSE', 'NMSE', 'prob']
+    names = ["ALISTA-SS-LF12", "ALISTA-SS-LF24", "ALISTA-SS-LF48", "ALISTA-SS-LF96"]  #
     plot_config = {
-        "AMI-LF10": {"label": 'AMI-LISTA'},
-        "LISTA-LF10": {"label": 'LISTA-LF'},
-        "LISTA-10": {"label": 'LISTA'},
-        "AMI-10": {"label": 'LISTA-AM'},
+        "ALISTA-10": {"label": 'ALISTA'},
+        "ALISTA-20": {"label": 'ALISTA-20'},
+        "ALISTA-SS-LF12": {"label": 'ALISTA-SS-12'},
+        "ALISTA-SS-LF24": {"label": 'ALISTA-SS-24'},
+        "ALISTA-SS-LF48": {"label": 'ALISTA-SS-48'},
+        "ALISTA-SS-LF96": {"label": 'ALISTA-SS-96'},
     }
     data = load_data(names, mode, testSNR_interval)
     plt.style.use(['science', 'ieee', 'grid'])
@@ -55,7 +57,7 @@ if is_ablition:
     plot_graph(data, plot_config, names, mode, 'prob', 'accuracy')
 else:
     #     names = ["AMI-LF10", "LISTA-10", "MUSIC", "MVDR", "DCNN", "ALISTA-10"]
-    names = ["ALISTA-SS-20", "ALISTA-SS-40", "ALISTA-SS-60", "ALISTA-SS-80", "MUSIC", "DCNN"] #
+    names = ["MUSIC", "DCNN", "MVDR"] #
     plot_config = {
         "AMI-LF10": {"label": 'AMI-LISTA'},
         "LISTA-10": {"label": 'LISTA'},
@@ -63,12 +65,7 @@ else:
         "MUSIC": {"label": 'MUSIC'},
         "MVDR": {"label": 'MVDR'},
         "DCNN": {"label": 'DCNN'},
-        "ALISTA-10": {"label": 'ALISTA'},
-        "ALISTA-20": {"label": 'ALISTA-20'},
-        "ALISTA-SS-20": {"label": 'ALISTA-SS-20'},
-        "ALISTA-SS-40": {"label": 'ALISTA-SS-40'},
-        "ALISTA-SS-60": {"label": 'ALISTA-SS-60'},
-        "ALISTA-SS-80": {"label": 'ALISTA-SS-80'},
+        "ALISTA-SS-LF80": {"label": 'ALISTA-SS-80'},
     }
     data = load_data(names, mode, testSNR_interval)
     plt.style.use(['science', 'ieee', 'grid'])

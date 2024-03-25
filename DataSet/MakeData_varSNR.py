@@ -5,14 +5,14 @@ import numpy as np
 
 abs_path = os.path.abspath(os.path.dirname(__file__))
 
-interval = '35'
+interval = '7'
 
 configs = {
     'dataset_path': f'{abs_path}/Data/',
     'Start': -60,
     'End': 60,
     'Interval': 1,
-    'num_sensor': 4,
+    'num_sensor': 8,
     'num_snapshot': 256,
     'MC': 100,
 }

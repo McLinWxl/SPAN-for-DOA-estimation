@@ -14,6 +14,9 @@ class DataGenerator:
         :param wavelength:
         """
         self.DOAs = np.repeat(DOAs[np.newaxis, :, :], repeat, axis=0)
+        # Add random bias for test data
+        if not is_train:
+            self.DOAs += np.random.uniform(-0.1, 0.1, self.DOAs.shape)
         self.num_sensors = num_sensors
         self.num_snapshot = num_snapshot
         self.snr_db = snr_db

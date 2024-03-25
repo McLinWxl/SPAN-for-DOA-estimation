@@ -106,7 +106,7 @@ class TestCurve:
             raise ValueError("Wrong name!")
         return prediction
 
-    def find_peak(self, predict, is_insert=False):
+    def find_peak(self, predict, is_insert=True):
         num_lists, num_id, _, _ = predict.shape
         peak = np.zeros((num_lists, num_id, 2))
         for list_idx, idx in itertools.product(range(num_lists), range(num_id)):

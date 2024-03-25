@@ -12,9 +12,9 @@ num_sensors = 8
 # For LISTA, CPSS, AMI
 is_LF = True
 
-num_layers = 60
-num_layers_saved = 60
-num_layers_test = 60
+num_layers = 24
+num_layers_saved = 24
+num_layers_test = 24
 
 is_checkpoint = False
 ####################
@@ -35,15 +35,18 @@ if name in DataMethods or name in ModelMethods:
     name_train = f'{name}'
     name_test = f'{name}'
     name_test_SNR = f'{name}'
+    name_test_result = f'{name}'
 elif name in UnfoldingMethods:
     if is_LF:
         name_train = f'{name}-LF{num_layers}'
         name_test = f'{name}-LF{num_layers_saved}'
         name_test_SNR = f'{name}-LF{num_layers_saved}'
+        name_test_result = f'{name}-LF{num_layers_test}'
     else:
         name_train = f'{name}-{num_layers}'
         name_test = f'{name}-{num_layers_saved}'
         name_test_SNR = f'{name}-{num_layers_saved}'
+        name_test_result = f'{name}-{num_layers_test}'
 else:
     raise ValueError("Wrong name!")
 
@@ -66,8 +69,8 @@ config_test = {
     'device': 'cpu',
     'data_path': f'{abs_path}/DataSet/Data/TestSpectrum_{num_sensors}.h5',
     'model_path': f'{abs_path}/checkpoint/{name_test}.pth' if is_checkpoint else f'{abs_path}/Model_mini/{name_test}/',
-    'figure_path': f'{abs_path}/Figure_mini/{name_test}/',
-    'result_path': f'{abs_path}/Result_mini/{name_test}/',
+    'figure_path': f'{abs_path}/Figure_mini/{name_test_result}/',
+    'result_path': f'{abs_path}/Result_mini/{name_test_result}/',
     'batch_size': 1,
     'num_layers': num_layers_test,
 }
@@ -87,9 +90,9 @@ config_test_static = {
     'testSNR_interval': testSNR_interval,
     'device': 'cpu',
     'data_path': data_path_static,
-    'model_path': f'{abs_path}/checkpoint/{name_test_SNR}.pth' if is_checkpoint else f'{abs_path}/Model_mini/{name_test_SNR}/',
-    'figure_path': f'{abs_path}/Figure_mini/{name_test_SNR}/',
-    'result_path': f'{abs_path}/Result_mini/{name_test_SNR}/',
+    'model_path': f'{abs_path}/checkpoints/{name_test_SNR}.pth' if is_checkpoint else f'{abs_path}/Model_mini/{name_test_SNR}/',
+    'figure_path': f'{abs_path}/Figure_mini/{name_test_result}/',
+    'result_path': f'{abs_path}/Result_mini/{name_test_result}/',
     'batch_size': 1,
     'num_layers': num_layers_test,
 }

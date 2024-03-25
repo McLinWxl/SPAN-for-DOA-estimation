@@ -6,7 +6,7 @@ import DoaMethods
 import h5py
 
 
-def Spect2DoA(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
+def Spect2DoA(Spectrum, num_sources=2, start_bias=60):
     """
     :param Spectrum: (num_samples, num_meshes, 1)
     :param num_sources:
@@ -18,12 +18,12 @@ def Spect2DoA(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
     angles = np.zeros((num_samples, num_sources))
     for num in range(num_samples):
         li_0 = Spectrum[num, :].reshape(-1)
-        li_0[li_0 < 0] = 0
-        li = np.sqrt(li_0)
+        # li_0[li_0 < 0] = 0
+        li = li_0
         angle = np.zeros(num_sources) - 5
         peaks_idx = np.zeros(num_sources)
         grids_mesh = np.arange(num_meshes) - start_bias
-        peaks, _ = scipy.signal.find_peaks(li, height=height_ignore)
+        peaks, _ = scipy.signal.find_peaks(li)
         max_spectrum = heapq.nlargest(num_sources, li[peaks])
         for i in range(len(max_spectrum)):
             peaks_idx[i] = np.where(li == max_spectrum[i])[0][0]
@@ -42,7 +42,7 @@ def Spect2DoA(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
     return np.sort(angles, axis=1)[::-1]
 
 
-def Spect2DoA_no_insert(Spectrum, num_sources=2, height_ignore=0, start_bias=60):
+def Spect2DoA_no_insert(Spectrum, num_sources=2, start_bias=60):
     """
     :param Spectrum: (num_samples, num_meshes, 1)
     :param num_sources:
@@ -55,10 +55,10 @@ def Spect2DoA_no_insert(Spectrum, num_sources=2, height_ignore=0, start_bias=60)
     grids_mesh = np.arange(num_meshes) - start_bias
     for num in range(num_samples):
         li_0 = Spectrum[num, :].reshape(-1)
-        li_0[li_0 < 0] = 0
-        li = np.sqrt(li_0)
+        # li_0[li_0 < 0] = 0
+        li = li_0
         angle = np.zeros(num_sources) - 5
-        peaks, _ = scipy.signal.find_peaks(li, height=height_ignore)
+        peaks, _ = scipy.signal.find_peaks(li)
         max_spectrum = heapq.nlargest(num_sources, li[peaks])
         for i in range(len(max_spectrum)):
             angle[i] = grids_mesh[np.where(li == max_spectrum[i])[0][0]]
@@ -80,6 +80,7 @@ def DoA2Spect(DoA, num_meshes=121, num_sources=2, start_bias=60):
         for i in range(num_sources):
             spectrum[num, int(DoA[num, i] + start_bias)] = 1
     return spectrum
+
 
 # Spect2DoA = Spect2DoA(np.random.rand(10, 121, 1))
 
@@ -123,8 +124,9 @@ class ReadModel:
             model = (DoaMethods.UnfoldingMethods.ALISTA(dictionary=dictionary, num_layers=num_layers, is_train=is_train)
                      .to(device))
         elif name == 'ALISTA-SS':
-            model = (DoaMethods.UnfoldingMethods.ALISTA_SS(dictionary=dictionary, num_layers=num_layers, is_train=is_train)
-                     .to(device))
+            model = (
+                DoaMethods.UnfoldingMethods.ALISTA_SS(dictionary=dictionary, num_layers=num_layers, is_train=is_train)
+                .to(device))
         elif name == 'CPSS':
             model = (DoaMethods.UnfoldingMethods.CPSS_LISTA(dictionary=dictionary, num_layers=num_layers)
                      .to(device))
@@ -136,7 +138,6 @@ class ReadModel:
         # Print trainable parameters
         num_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"{name} Total number of trainable parameters : {num_trainable_params}")
-
 
         # print(f"{name} Total number of parameters : {sum(p.numel() for p in model.parameters())}")
 
@@ -205,15 +206,16 @@ def min_max_norm(x):
     return x
 
 
-
-def find_peak(spectrum, num_sources=2, height_ignore=0, start_bias=60, is_insert=False):
+def find_peak(spectrum, num_sources=2, start_bias=60, is_insert=True):
     numTest, num_mesh, _ = spectrum.shape
     angles = np.zeros((num_sources, numTest))
     for num in range(numTest):
-        li = spectrum[num, :].reshape(-1)
+        # li = spectrum[num, :].reshape(-1)
         if is_insert:
-            angle = Spect2DoA(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources, height_ignore=height_ignore, start_bias=start_bias)
+            angle = Spect2DoA(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources,
+                              start_bias=start_bias)
         else:
-            angle = Spect2DoA_no_insert(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources, height_ignore=height_ignore, start_bias=start_bias)
+            angle = Spect2DoA_no_insert(spectrum[num, :].reshape(1, num_mesh, 1), num_sources=num_sources,
+                                        start_bias=start_bias)
         angles[:, num] = angle.reshape(-1)
     return np.sort(angles, axis=0)[::-1]

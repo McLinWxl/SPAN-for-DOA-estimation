@@ -19,7 +19,7 @@ class ModelMethods:
         self.angles = np.linspace(-0.5 * (self.num_meshes - 1) * resolution, 0.5 * (self.num_meshes - 1) * resolution,
                                   self.num_meshes)
 
-    def ISTA(self, covariance_array, max_iter = 500, tol = 1e-6):
+    def ISTA(self, covariance_array, max_iter=500, tol=1e-6):
         """
         :param covariance_array:
         :param max_iter:
@@ -46,21 +46,22 @@ class ModelMethods:
 
     def MUSIC(self, CovarianceMatrix):
         """
-        :param CovarianceMatrix_clean:
+        :param CovarianceMatrix
         :return:
         """
-        D, EV = np.linalg.eig(CovarianceMatrix)
-        index = np.argsort(D)[::-1]
-        D_sorted = D[index]
-        EV_sorted = EV[:, index]
-        Ps = EV_sorted[:, :self.num_sources] @ EV_sorted[:, :self.num_sources].conj().T
-        EN = np.eye(self.num_sensors) - Ps
-        predict = np.zeros((self.num_meshes, 1))
-        for i in range(self.num_meshes):
-            a = np.exp(1j * np.pi * np.arange(self.num_sensors)[:, np.newaxis] * np.sin(np.deg2rad(self.angles[i])))
-            item = (a.conj().T @ a) / np.abs((a.conj().T @ EN @ a))
-            predict[i] = 10 * np.log10(np.abs(item))
-        return (predict - np.min(predict)) / (np.max(predict) - np.min(predict))
+        w, V = np.linalg.eig(CovarianceMatrix)
+        w_index_order = np.argsort(w)
+        V_noise = V[:, w_index_order[0:-self.num_sources]]
+        noise_subspace = np.matmul(V_noise, np.matrix.getH(V_noise))
+        doa_search = self.angles
+        p_music = np.zeros((len(doa_search), 1))
+        for doa_index in range(len(doa_search)):
+            a = np.exp(
+                1j * np.pi * np.arange(self.num_sensors)[:, np.newaxis] * np.sin(np.deg2rad(doa_search[doa_index])))
+            p_music[doa_index] = np.abs(1 / np.matmul(np.matmul(np.matrix.getH(a), noise_subspace), a).reshape(-1)[0])
+        p_music = p_music / np.max(p_music)
+        p_music = 10 * np.log10(p_music)
+        return p_music - np.min(p_music)
 
     def SBL(self, raw_data, max_iteration=500, error_threshold=1e-3):
         """
@@ -92,7 +93,7 @@ class ModelMethods:
             if np.linalg.norm(gamma - gamma0) / np.linalg.norm(gamma) < error_threshold:
                 stop_iter = True
             ItrIdx += 1
-        return (gamma - np.min(gamma)) / (np.max(gamma) - np.min(gamma))
+        return gamma
 
     def MVDR(self, covarianceMatrix):
         """
@@ -106,9 +107,6 @@ class ModelMethods:
         sigma = np.array(sigma).reshape([-1, 1])
         sigma = np.abs(sigma)
         return (sigma - np.min(sigma)) / (np.max(sigma) - np.min(sigma))
-
-
-
 
 
 if __name__ == '__main__':

@@ -388,17 +388,18 @@ class ALISTA_SS(torch.nn.Module):
             epsilon = torch.norm(W_before - W)
             W_before = W
             ite += 1
-            print(ite, epsilon)
+            if ite >= 9000 or epsilon < 0.0001:
+                print(ite, epsilon)
 
         self.W = W
 
         # self.conv1 = torch.nn.Conv1d(1, 8, 15, padding='same')
         # self.conv2 = torch.nn.Conv1d(8, 4, 5, padding='same')
         # self.conv3 = torch.nn.Conv1d(4, 1, 3, padding='same')
-        self.con0 = torch.nn.Conv1d(1, 16, 6, stride=3)
-        self.con1 = torch.nn.Conv1d(16, 8, 6, stride=2)
-        self.con2 = torch.nn.Conv1d(8, 4, 3, stride=1)
-        self.con3 = torch.nn.Conv1d(4, 2, 3, stride=1)
+        self.con0 = torch.nn.Conv1d(1, 8, 6, stride=3)
+        self.con1 = torch.nn.Conv1d(8, 4, 3, stride=1)
+        self.con2 = torch.nn.Conv1d(4, 2, 3, stride=1)
+        self.maxpool = torch.nn.MaxPool1d(2, stride=2)
 
         # self.con1_threshold = torch.nn.Conv1d(1, 8, 15, stride=6)
         # self.con2_threshold = torch.nn.Conv1d(8, 4, 5, stride=3)
@@ -458,11 +459,13 @@ class ALISTA_SS(torch.nn.Module):
         # print(x_input.shape)
         x_conv0 = self.activate(self.con0(x_input))
         # print(x_conv0.shape)
-        x_conv1 = self.activate(self.con1(x_conv0))
+        x_conv1 = self.maxpool(x_conv0)
         # print(x_conv1.shape)
-        x_conv2 = self.activate(self.con2(x_conv1))
+        x_conv2 = self.activate(self.con1(x_conv1))
         # print(x_conv2.shape)
-        x_forward = self.activate(self.con3(x_conv2))
+        x_conv3 = self.maxpool(x_conv2)
+        # print(x_conv3.shape)
+        x_forward = self.activate(self.con2(x_conv3))
         # print(x_forward.shape)
         params = torch.abs(torch.mean(x_forward, dim=2)).reshape(-1, 2, 1)
         return params[:, 0, :].reshape(-1, 1, 1), params[:, 1, :].reshape(-1, 1, 1)
