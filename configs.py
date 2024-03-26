@@ -12,9 +12,9 @@ num_sensors = 8
 # For LISTA, CPSS, AMI
 is_LF = True
 
-num_layers = 24
-num_layers_saved = 24
-num_layers_test = 24
+num_layers = 32
+num_layers_saved = 32
+num_layers_test = 32
 
 is_checkpoint = False
 ####################

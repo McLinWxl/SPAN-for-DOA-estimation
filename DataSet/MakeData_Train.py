@@ -29,14 +29,23 @@ num_meshes = len(Angles)
 
 num_DOAs = 3000
 DOAs = np.random.uniform(-60, 60, (num_DOAs, 2))
+#
+# DOAs_diff = np.abs(DOAs[:, 0] - DOAs[:, 1])
+# DOAs_diff = np.sort(DOAs_diff)
 
-DOAs_diff = np.abs(DOAs[:, 0] - DOAs[:, 1])
-DOAs_diff = np.sort(DOAs_diff)
+# DOAs = np.random.randint(configs['Start'], configs['End'], (num_DOAs, 2))
+# for i in range(num_DOAs):
+#     if DOAs[i, 0] == DOAs[i, 1]:
+#         if np.random.rand() > 0.5:
+#             DOAs[i, 1] = np.random.randint(DOAs[i, 1] + 1, configs['End'])
+#         else:
+#             DOAs[i, 0] = np.random.randint(configs['Start'], DOAs[i, 0])
+
 
 # DOAs = []
-# k = np.arange(2, 40, 3)
-# step = 2
-# for i in range(5):
+# k = np.arange(1, 20, 1)
+# step = 1
+# for i in range(10):
 #     for j in range(len(k)):
 #         DOA1 = np.array([-60 + i * step, -60 + i * step + k[j]]).reshape(1, 2)
 #         DOA2 = np.array([0, 0 + i * step + k[j]]).reshape(1, 2)
@@ -46,9 +55,9 @@ DOAs_diff = np.sort(DOAs_diff)
 #             DOAs = np.vstack([DOAs, DOA1])
 #             DOAs = np.vstack([DOAs, DOA2])
 
-snr_list = [-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, 0, 3]
+snr_list = [-10, -9, -8, -7, -6, -5]
 for snr in snr_list:
-    DG = DataGenerator(DOAs, snr_db=snr, is_train=True, repeat=1)
+    DG = DataGenerator(DOAs, snr_db=snr, is_train=True, repeat=3)
     RawData_sample, Label_sample = DG.get_raw_label()
     if snr == snr_list[0]:
         RawData = RawData_sample

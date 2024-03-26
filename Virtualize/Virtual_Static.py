@@ -41,7 +41,7 @@ def plot_graph(data, plot_config, names, mode, ylabel, save_as):
     plt.close()
 
 if is_ablition:
-    names = ["ALISTA-SS-LF12", "ALISTA-SS-LF24", "ALISTA-SS-LF48", "ALISTA-SS-LF96"]  #
+    names = ["ALISTA-SS-LF12", "ALISTA-SS-LF24", "ALISTA-SS-LF48"]  #
     plot_config = {
         "ALISTA-10": {"label": 'ALISTA'},
         "ALISTA-20": {"label": 'ALISTA-20'},
