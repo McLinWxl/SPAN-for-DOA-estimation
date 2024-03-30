@@ -369,6 +369,7 @@ class ALISTA_SS(torch.nn.Module):
         self.covariance_norm = kwargs.get('covariance_norm', 1)
         self.num_layers = kwargs.get('num_layers', 10)
         self.device = kwargs.get('device', 'cpu')
+        self.num_sources = kwargs.get('num_sources', 2)
         # calculate the F-norm of dictionary matrix (64, 121)
         self.dictionary = dictionary
 
@@ -376,41 +377,31 @@ class ALISTA_SS(torch.nn.Module):
         self.stepsize_init = 1 / (5 * torch.linalg.eigvals(torch.matmul(dictionary.conj().T, dictionary)).real.max())
         print(f"Step Size Init: {self.stepsize_init}")
 
-        # Trainable Parameters
-        # self.gamma = torch.nn.Parameter(self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
-        # self.theta = torch.nn.Parameter(0.1 * self.stepsize_init * torch.ones(self.num_layers), requires_grad=True)
         self.relu = torch.nn.ReLU()
+        self.LeakyReLU = torch.nn.LeakyReLU()
 
         ite, epsilon = 0, 1
         W, W_before = dictionary, torch.zeros_like(dictionary)
         # while epsilon > 0.00001 and ite < 10000:
-        #     W = self.PGD(W, self.stepsize_init)
-        #     epsilon = torch.norm(W_before - W)
-        #     W_before = W
-        #     ite += 1
-        #     if ite >= 9900 or epsilon < 0.000013:
-        #         print(ite, epsilon)
+        while ite < 10000:
+            W = self.PGD(W, self.stepsize_init)
+            epsilon = torch.norm(W_before - W)
+            W_before = W
+            ite += 1
+            if ite >= 9900:
+                print(ite, epsilon)
 
         self.W = W
 
-        # self.conv1 = torch.nn.Conv1d(1, 8, 15, padding='same')
-        # self.conv2 = torch.nn.Conv1d(8, 4, 5, padding='same')
-        # self.conv3 = torch.nn.Conv1d(4, 1, 3, padding='same')
-        self.con0 = torch.nn.Conv1d(1, 16, 25, stride=1)
-        self.con1 = torch.nn.Conv1d(16, 8, 15, stride=1)
-        self.con2 = torch.nn.Conv1d(8, 4, 5, stride=1)
-        self.con3 = torch.nn.Conv1d(4, 2, 3, stride=1)
-        self.maxpool = torch.nn.MaxPool1d(2, stride=2)
+        self.down_sample_1 = torch.nn.Conv1d(in_channels=1, out_channels=4, kernel_size=25, stride=2)
+        self.down_sample_2 = torch.nn.Conv1d(in_channels=4, out_channels=8, kernel_size=15, stride=2)
+        self.down_sample_3 = torch.nn.Conv1d(in_channels=8, out_channels=12, kernel_size=3, stride=2)
+        self.up_sample_1 = torch.nn.ConvTranspose1d(in_channels=12, out_channels=8, kernel_size=3, stride=2, output_padding=1)
+        self.up_sample_2 = torch.nn.ConvTranspose1d(in_channels=8, out_channels=4, kernel_size=15, stride=2)
+        self.up_sample_3 = torch.nn.ConvTranspose1d(in_channels=4, out_channels=2, kernel_size=25, stride=2)
 
-        # self.con1_threshold = torch.nn.Conv1d(1, 8, 15, stride=6)
-        # self.con2_threshold = torch.nn.Conv1d(8, 4, 5, stride=3)
-        # self.con3_threshold = torch.nn.Conv1d(4, 1, 3, stride=1)
-        #
-        # self.con1_stepsize = torch.nn.Conv1d(1, 8, 15,stride=6)
-        # self.con2_stepsize = torch.nn.Conv1d(8, 4, 5, stride=3)
-        # self.con3_stepsize = torch.nn.Conv1d(4, 1, 3, stride=1)
 
-        self.activate = torch.nn.LeakyReLU()
+        self.activate = torch.nn.Sigmoid()
 
     def PGD(self, W, gamma):
         """
@@ -426,78 +417,48 @@ class ALISTA_SS(torch.nn.Module):
         W = W - gamma * part2
         return W
 
-    # def cal_threshold(self, x):
-    #     # x_input = x.reshape(-1, 1, self.num_meshes)
-    #     # x_conv1 = self.activate(self.conv1(x_input))
-    #     # x_conv2 = self.activate(self.conv2(x_conv1))
-    #     # x_forward = self.activate(self.conv3(x_conv2))
-    #     # return x_forward.reshape(-1, self.num_meshes, 1)
-    #     x_input = x.reshape(-1, 1, self.num_meshes)
-    #     # print(x_input.shape)
-    #     x_conv1 = self.activate(self.con1_threshold(x_input))
-    #     # print(x_conv1.shape)
-    #     x_conv2 = self.activate(self.con2_threshold(x_conv1))
-    #     # print(x_conv2.shape)
-    #     x_forward = self.activate(self.con3_threshold(x_conv2))
-    #     # print(x_forward.shape)
-    #     step_size = torch.abs(torch.mean(x_forward, dim=2))
-    #     return step_size.reshape(-1, 1, 1)
-    #
-    # def cal_stepsize(self, x):
-    #     x_input = x.reshape(-1, 1, self.num_meshes)
-    #     # print(x_input.shape)
-    #     x_conv1 = self.activate(self.con1_stepsize(x_input))
-    #     # print(x_conv1.shape)
-    #     x_conv2 = self.activate(self.con2_stepsize(x_conv1))
-    #     # print(x_conv2.shape)
-    #     x_forward = self.activate(self.con3_stepsize(x_conv2))
-    #     # print(x_forward.shape)
-    #     step_size = torch.abs(torch.mean(x_forward, dim=2))
-    #     return step_size.reshape(-1, 1, 1)
+    def down_up_sample(self, x):
+        x = x.transpose(1, 2)
+        down1 = self.activate(self.down_sample_1(x))
+        down2 = self.activate(self.down_sample_2(down1))
+        down3 = self.activate(self.down_sample_3(down2))
+        up1 = self.activate(self.up_sample_1(down3))
+        up2 = self.activate(self.up_sample_2(up1))
+        up3 = self.activate(self.up_sample_3(up2))
+        up3 = up3.transpose(1, 2)
+        return up3
+
 
     def cal_params(self, x):
         """
         Calculate the threshold and step size
         """
-        x_input = x.reshape(-1, 1, self.num_meshes)
-        # print(x_input.shape)
-        x_conv0 = self.activate(self.con0(x_input))
-        # x_conv0 = self.maxpool(x_conv0)
-        # print(x_conv0.shape)
-        x_conv1 = self.activate(self.con1(x_conv0))
-        x_conv1 = self.maxpool(x_conv1)
-        # print(x_conv1.shape)
-        x_conv2 = self.activate(self.con2(x_conv1))
-        x_conv2 = self.maxpool(x_conv2)
-        # print(x_conv2.shape)
-        x_conv3 = self.activate(self.con3(x_conv2))
-        x_forward = x_conv3
-        # print(x_forward.shape)
-        params = torch.abs(torch.mean(x_forward, dim=2)).reshape(-1, 2, 1)
-        return params[:, 0, :].reshape(-1, 1, 1), params[:, 1, :].reshape(-1, 1, 1)
+        Residual_weight_step_size = self.down_up_sample(x)
+        return (Residual_weight_step_size[:, :, 0].reshape(-1, self.num_meshes, 1),
+                Residual_weight_step_size[:, :, 1].reshape(-1, self.num_meshes, 1))
 
     def forward(self, covariance_vector: torch.Tensor):
         dictionary = self.dictionary.to(torch.complex64)
         covariance_vector = covariance_vector.reshape(-1, self.M2, 1).to(self.device).to(torch.complex64)
-        # self.covariance_norm = torch.linalg.matrix_norm(covariance_vector, ord=np.inf, keepdim=True)
         covariance_vector = covariance_vector / self.covariance_norm
         batch_size = covariance_vector.shape[0]
         x0 = torch.matmul(dictionary.conj().T, covariance_vector)
-        x0 = x0 / torch.norm(x0, dim=1, keepdim=True)
+        # x0 = x0 / torch.norm(x0, dim=1, keepdim=True)
         x_real, x_init = x0.real.float(), x0.real.float()
+        tol_power = torch.sum(x_real, dim=1, keepdim=True)
+        x_real = x_real / tol_power * 100
+        # x_real = torch.zeros((batch_size, self.num_meshes, 1))
         x_layers_virtual = torch.zeros(batch_size, self.num_layers, self.num_meshes, 1).to(self.device)
         for layer in range(self.num_layers):
             p1 = torch.matmul(dictionary, x_real + 1j * torch.zeros_like(x_real)) - covariance_vector
-            # step_size = self.cal_stepsize(x_real)
-            step_size, threshold = self.cal_params(x_real)
-            # print(step_size.shape)
-            # print(torch.matmul(self.W.conj().T, p1).shape)
+            step_size, threshold_weight = self.cal_params(x_real)
+            # Residual = Residual_weight * x
+            # threshed = self.relu(x - Residual)
             p2 = torch.mul(step_size, torch.matmul(self.W.conj().T, p1))
             p3 = x_real - p2
             x_abs = torch.abs(p3)
-            # x_threshold_weight = self.cal_threshold(x_abs)
-            x_real = self.relu(x_abs - threshold)
-            x_real = x_real / (torch.norm(x_real, dim=1, keepdim=True) + 1e-20)
+            x_real = self.relu(x_abs - threshold_weight)
+            x_real = x_real / ((torch.sum(x_real, dim=1, keepdim=True) + 1e-32) * self.num_sources)
             x_layers_virtual[:, layer] = x_real
 
         return x_real, x_layers_virtual

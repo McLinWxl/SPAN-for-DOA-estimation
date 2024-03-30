@@ -45,11 +45,16 @@ class MakeDataset(torch.utils.data.Dataset):
 
     def cal_dictionary(self):
         dictionary = numpy.zeros((self.num_sensors**2, self.num_meshes), dtype=numpy.complex64)
+        w_m = numpy.zeros((self.num_sensors, 121)) + 1j * numpy.zeros((self.num_sensors, 121))
         for i in range(self.num_sensors):
-            s = numpy.exp(-1j * numpy.pi * 2 * self.sensor_interval * i * numpy.sin(numpy.deg2rad(self.theta)) / self.wavelength)
-            B = numpy.diag(s)
-            phi = numpy.matmul(self.manifold, B)
-            dictionary[i*self.num_sensors:(i+1)*self.num_sensors, :] = phi
+            # s = numpy.exp(-1j * numpy.pi * 2 * self.sensor_interval * i * numpy.sin(numpy.deg2rad(self.theta)) / self.wavelength)
+            # B = numpy.diag(s)
+            # phi = numpy.matmul(self.manifold, B)
+            for j in range(self.num_meshes):
+                steer_vec = self.manifold[:, j].reshape(-1, 1)
+                steer_map = numpy.matmul(steer_vec, steer_vec.T.conjugate())
+                w_m[:, j] = steer_map[:, i]
+            dictionary[i*self.num_sensors:(i+1)*self.num_sensors, :] = w_m
         return dictionary
 
     def cal_covariance_matrix_clean(self):

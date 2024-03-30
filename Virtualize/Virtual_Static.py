@@ -41,14 +41,16 @@ def plot_graph(data, plot_config, names, mode, ylabel, save_as):
     plt.close()
 
 if is_ablition:
-    names = ["ALISTA-SS-LF12", "ALISTA-SS-LF24", "ALISTA-SS-LF48"]  #
+    names = ["MUSIC", "ALISTA-SS-LF8", "ALISTA-SS-LF16", "ALISTA-SS-LF32"]  #
     plot_config = {
+        "MUSIC": {"label": 'MUSIC'},
         "ALISTA-10": {"label": 'ALISTA'},
         "ALISTA-20": {"label": 'ALISTA-20'},
-        "ALISTA-SS-LF12": {"label": 'ALISTA-SS-12'},
-        "ALISTA-SS-LF24": {"label": 'ALISTA-SS-24'},
-        "ALISTA-SS-LF48": {"label": 'ALISTA-SS-48'},
-        "ALISTA-SS-LF96": {"label": 'ALISTA-SS-96'},
+        "ALISTA-SS-LF8": {"label": 'ALISTA-SS-8'},
+        "ALISTA-SS-LF16": {"label": 'ALISTA-SS-16'},
+        "ALISTA-SS-LF32": {"label": 'ALISTA-SS-32'},
+        "ALISTA-SS-LF64": {"label": 'ALISTA-SS-64'},
+        "ALISTA-SS-LF128": {"label": 'ALISTA-SS-128'},
     }
     data = load_data(names, mode, testSNR_interval)
     plt.style.use(['science', 'ieee', 'grid'])

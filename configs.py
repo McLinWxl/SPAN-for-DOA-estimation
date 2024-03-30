@@ -12,14 +12,14 @@ num_sensors = 8
 # For LISTA, CPSS, AMI
 is_LF = True
 
-num_layers = 32
-num_layers_saved = 32
-num_layers_test = 32
+num_layers = 8
+num_layers_saved = 8
+num_layers_test = 8
 
 is_checkpoint = False
 ####################
 mode = 'SNR'  # SNR, Snapshots, Separation, Sensors
-testSNR_interval = 35
+testSNR_interval = 10
 ####################
 batch_size = 128
 lr = 0.001

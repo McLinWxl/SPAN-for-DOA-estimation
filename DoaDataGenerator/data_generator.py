@@ -16,7 +16,7 @@ class DataGenerator:
         self.DOAs = np.repeat(DOAs[np.newaxis, :, :], repeat, axis=0)
         # Add random bias for test data
         if not is_train:
-            self.DOAs += np.random.uniform(-0.1, 0.1, self.DOAs.shape)
+            self.DOAs += np.random.uniform(-1, 1, self.DOAs.shape)
         self.num_sensors = num_sensors
         self.num_snapshot = num_snapshot
         self.snr_db = snr_db
@@ -43,12 +43,14 @@ class DataGenerator:
                         # calculate the left and right power by the distance to the two nearest mesh
                         left = int(np.floor(self.DOAs[r, i, j]) + bias)
                         right = int(np.ceil(self.DOAs[r, i, j]) + bias)
-                        right_power = np.square(self.DOAs[r, i, j] - left + bias) / np.square(right - left) * signal_power
-                        left_power = np.square(right - self.DOAs[r, i, j] - bias) / np.square(right - left) * signal_power
+                        right_power = (self.DOAs[r, i, j] - left + bias) / (right - left) * signal_power
+                        left_power = (right - self.DOAs[r, i, j] - bias) / (right - left) * signal_power
                         # left_power = (self.DOAs[r, i, j] - left + bias) / (right - left) * signal_power
                         # right_power = (right - self.DOAs[r, i, j] - bias) / (right - left) * signal_power
-                        self.labels[r, i, left, 0] = left_power
-                        self.labels[r, i, right, 0] = right_power
+                        left_power_normed = left_power / (left_power + right_power) / self.num_sources
+                        right_power_normed = right_power / (left_power + right_power) / self.num_sources
+                        self.labels[r, i, left, 0] = left_power_normed * self.num_sources
+                        self.labels[r, i, right, 0] = right_power_normed * self.num_sources
                     snr_db = self.snr_db
                     # snr_db = self.snr_db if not self.is_train else np.random.uniform(-10, 0)
                     data_all[r, i, j, :, :] = self.add_awgn(data_all[r, i, j, :, :], signal_power, snr_db)
